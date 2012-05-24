@@ -37,15 +37,14 @@ public class Syrup {
 		consoleThread = new Thread(syrupConsole);
 		consoleThread.start();
 		consoleThread.setName("Console Thread");
+		System.out.println("[INFO] Started console thread");
 		
-		waffleListener = new WaffleListener();
+		waffleListener = new WaffleListener(6667);
     	waffleListenerThread = new Thread(waffleListener);
     	waffleListenerThread.start();
     	waffleListenerThread.setName("Waffle Listener Thread");
+		System.out.println("[INFO] Started client listener thread");
 
-		
-	    
-        
     	System.out.println("********** Starting ColdFyre's Syrup IRCD **********");
     	
         if (openConnectorSocket()) {
@@ -96,14 +95,14 @@ public class Syrup {
 		}
 		
 		if (command.equalsIgnoreCase("UID")) {
-			String UID=split[2];
+			//String UID=split[2];
 			long idleTime = Long.parseLong(split[3]) * 1000;
 			long signedOn = Long.parseLong(split[9]);
 			if (split[11].startsWith(":")) split[11] = split[11].substring(1);
-			//String realname = Format.join(split, " ", 11);
+			String realname = Format.join(split, " ", 11);
 			boolean isRegistered = split[10].contains("r");
 			boolean isOper = split[10].contains("o");
-			IRCUser ircuser = new IRCUser(split[4], "", split[7], split[5], split[6], split[8], "", "", isRegistered, isOper, "", signedOn, idleTime);
+			IRCUser ircuser = new IRCUser(split[4], realname, split[7], split[5], split[6], split[8], "", "", isRegistered, isOper, "", signedOn, idleTime);
 			ircuser.isRegistered = isRegistered;
 			//IRCDLink.uid2ircuser.put(UID, ircuser); // Add it to the hashmap
 		}

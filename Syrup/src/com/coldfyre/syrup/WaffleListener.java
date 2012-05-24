@@ -5,30 +5,61 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-class WaffleListener implements Runnable {
-    Socket server = null;
+public class WaffleListener implements Runnable {
+	protected int          serverPort   = 8080;
+    protected ServerSocket serverSocket = null;
+    protected boolean      isStopped    = false;
+    protected Thread       runningThread= null;
 
-	public void run (){
-		ServerSocket waffleListner = null;
-		try {
-			waffleListner = new ServerSocket(6667);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-	    WaffleClient connection;
+    public WaffleListener(int port){
+        this.serverPort = port;
+    }
 
+    public void run(){
+        synchronized(this){
+            this.runningThread = Thread.currentThread();
+        }
+        openServerSocket();
+        while(! isStopped()){
+            Socket clientSocket = null;
+            try {
+                clientSocket = this.serverSocket.accept();
+            } catch (IOException e) {
+                if(isStopped()) {
+                    System.out.println("Server Stopped.") ;
+                    return;
+                }
+                throw new RuntimeException(
+                    "Error accepting client connection", e);
+            }
+            new Thread(
+                new WaffleClient(
+                    clientSocket, "Multithreaded Server")
+            ).start();
+        }
+        System.out.println("Server Stopped.") ;
+    }
+
+
+    private synchronized boolean isStopped() {
+        return this.isStopped;
+    }
+
+    public synchronized void stop(){
+        this.isStopped = true;
         try {
-			server = waffleListner.accept();
-			System.out.println("[INFO] Got connection from " + server.getRemoteSocketAddress());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        WaffleClient conn_c= new WaffleClient(server);
-        Thread t = new Thread(conn_c);
-        t.start();
-        t.setName("Client - " + server.getRemoteSocketAddress());
-	}
+            this.serverSocket.close();
+        } catch (IOException e) {
+            throw new RuntimeException("Error closing server", e);
+        }
+    }
+
+    private void openServerSocket() {
+        try {
+            this.serverSocket = new ServerSocket(this.serverPort);
+        } catch (IOException e) {
+            throw new RuntimeException("Cannot open port 8080", e);
+        }
+    }
+
 }

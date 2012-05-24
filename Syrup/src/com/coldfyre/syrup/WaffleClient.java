@@ -1,9 +1,10 @@
 package com.coldfyre.syrup;
 
 import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.Socket;
 
 public class WaffleClient implements Runnable {
@@ -16,37 +17,58 @@ public class WaffleClient implements Runnable {
 	public String RemoveServerVersion;
 	
 	public static Socket waffleSocket;
-	public String line,input;
     
-	public static PrintStream out;
-    public static BufferedReader in = null;
+	public static PrintWriter out;
 	public static String waffleStream = null;
 
+	protected Socket clientSocket = null;
+    protected String serverText   = null;
+    
 
-	public void run() {
-		System.out.println("[INFO] Starting thread for " + waffleSocket.getRemoteSocketAddress());
+    public WaffleClient(Socket clientSocket, String serverText) {
+        this.clientSocket = clientSocket;
+        this.serverText   = serverText;
+    }
 
-	     //while (waffleSocket != null) {
-				try {
-					waffleStream = in.readLine();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+    public void run() {
+        BufferedReader in = null;  
+        try
+        {                                
+            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+            out.println("CAPAB START 1202");
+            out.flush();
 
-	        	if (waffleStream != null) {
-	        		out.println("I got:" + waffleStream);
-	        	}
-	        //}
-
-	}
+            while(clientSocket.isConnected()) {
+                String clientCommand = in.readLine();          
+                System.out.println("Client Says :" + clientCommand);
+                
+                
+            }
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            try
+            {                    
+                in.close();
+                out.close();
+                clientSocket.close();
+            }
+            catch(IOException ioe)
+            {
+                ioe.printStackTrace();
+            }
+        } 
+    }
 	
-	WaffleClient(Socket server) {
-		waffleSocket = server;
-		RemoteServerID = "ZZZ";
-		RemoteServerHash = "";
+	public void ParseLinkCommand(String data) {
+		
 	}
-	
+    
 	public String getServerID() {
 		return RemoteServerID;
 	}
