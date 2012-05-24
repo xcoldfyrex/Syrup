@@ -27,22 +27,26 @@ public class SyrupConsole implements Runnable {
 				} 
 				else if (userInputArgs[0].equalsIgnoreCase("SQUIT")) 
 				{
-					Syrup.WriteSocket("SQUIT " + userInputArgs[1]);
+					Syrup.closeConnectorSocket();
 				} 
 				else if (userInputArgs[0].equalsIgnoreCase("CONNECT")) 
 				{
-					Syrup.openConnectorSocket();
+					
+					if (Syrup.openConnectorSocket()) {
+			        	Syrup.connected = true;
+
+					}
 
 				} 
 				else if (userInputArgs[0].equalsIgnoreCase("STOP")) 
 				{
 					System.out.println("Shutting down..");
-					Syrup.WriteSocket("SQUIT Shutdown by user");
+					Syrup.closeConnectorSocket();
 					System.exit(1);
 				}
 				else 
 				{	
-					System.out.println("UNKNOWN COMMAND");
+					System.out.println("Unkown command, see /help");
 
 				}
 			}

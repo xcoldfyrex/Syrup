@@ -19,20 +19,33 @@ public class Syrup {
 	public static boolean sentCapab = false;
 	public static String pre = ":1SY ";
 	
+	//console thread
 	static SyrupConsole syrupConsole = null; 
 	private static Thread consoleThread = null;
+	
+	//minecraft server listener thread
+	static WaffleListener waffleListener = null; 
+	private static Thread waffleListenerThread = null;
+	
 
 	
 	public static List<IRCUser> IRCClient = new LinkedList<IRCUser>();
-
-
 
     public static void main(String[] args) throws IOException {
 
     	syrupConsole = new SyrupConsole();
 		consoleThread = new Thread(syrupConsole);
 		consoleThread.start();
+		consoleThread.setName("Console Thread");
 		
+		waffleListener = new WaffleListener();
+    	waffleListenerThread = new Thread(waffleListener);
+    	waffleListenerThread.start();
+    	waffleListenerThread.setName("Waffle Listener Thread");
+
+		
+	    
+        
     	System.out.println("********** Starting ColdFyre's Syrup IRCD **********");
     	
         if (openConnectorSocket()) {
@@ -40,12 +53,12 @@ public class Syrup {
         }
         
         while (running) {
-        	while (connected) {
+        	while (connected && connectorSocket != null) {
         		String connectorStream = in.readLine();
         		
         		if (connectorStream == null) {
-        			System.out.println("Lost link to " + connectorHost);
-        			connected = false;
+        			System.out.println("[WARN] Lost link to " + connectorHost);
+        			closeConnectorSocket();
         		} else {
         			System.out.println("->" + connectorStream);
         			ParseLinkCommand(connectorStream);
@@ -74,7 +87,9 @@ public class Syrup {
 			remoteSID = split[0];
 			command = split[1];
 		}
-		
+		if (data.startsWith("ERROR")) {
+			closeConnectorSocket();
+		}
 		//Got a PING
 		if (command.equalsIgnoreCase("PING")) {
 			WriteSocket(pre+"PONG 1SY "+ remoteSID);
@@ -141,6 +156,18 @@ public class Syrup {
         }
     	System.out.println("[OK] Connected to peer");
     	
+    	return true;
+    }
+    
+    public static boolean closeConnectorSocket() {
+		System.out.println("[INFO] Shutdown connector socket");
+    	connected = false;
+    	sentBurst = false;
+    	sentCapab = false;
+    	if ((connectorSocket != null) && connectorSocket.isConnected()) {
+    		try { connectorSocket.close(); } catch (IOException e) { 
+			}
+    	}
     	return true;
     }
     
