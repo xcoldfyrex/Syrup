@@ -3,6 +3,7 @@ package com.coldfyre.syrup;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.SocketAddress;
 
 public class SyrupConsole implements Runnable {
 
@@ -38,6 +39,19 @@ public class SyrupConsole implements Runnable {
 					}
 
 				} 
+				else if (userInputArgs[0].equalsIgnoreCase("LINKS")) {
+					int i = 0;
+					String sname,sver;
+					SocketAddress saddy;
+					
+					while (i < Syrup.WaffleClients.size()) {
+						sname = Syrup.WaffleClients.get(i).RemoteServerName;
+						saddy = Syrup.WaffleClients.get(i).RemoteServerAddress;
+						sver = Syrup.WaffleClients.get(i).RemoteServerVersion;
+						System.out.println(sname + " " + saddy + " " + sver);
+						i++;
+					}
+				}
 				else if (userInputArgs[0].equalsIgnoreCase("STOP")) 
 				{
 					System.out.println("Shutting down..");

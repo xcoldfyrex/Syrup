@@ -17,7 +17,9 @@ public class Syrup {
 	public static boolean connected = false;
 	public static boolean sentBurst = false;
 	public static boolean sentCapab = false;
-	public static String pre = ":1SY ";
+	public static String SID = "1SY";
+	public static String pre = ":" + SID + " ";
+	public static String serverName = "syrup.paradoxirc.net";
 	
 	//console thread
 	static SyrupConsole syrupConsole = null; 
@@ -30,6 +32,8 @@ public class Syrup {
 
 	
 	public static List<IRCUser> IRCClient = new LinkedList<IRCUser>();
+	public static List<WaffleClient> WaffleClients = new LinkedList<WaffleClient>();
+
 
     public static void main(String[] args) throws IOException {
 
@@ -111,7 +115,7 @@ public class Syrup {
     		WriteSocket("CAPAB START 1201");
     		WriteSocket("CAPAB CAPABILITIES :NICKMAX=33 CHANMAX=50 IDENTMAX=33 MAXTOPIC=500 MAXQUIT=500 MAXKICK=500 MAXGECOS=500 MAXAWAY=999 MAXMODES=1 HALFOP=1 PROTOCOL=1201");
     		WriteSocket("CAPAB END");  
-    		WriteSocket("SERVER syrup.paradoxirc.net mUPhegEy9f+fu*acre_= 0 1SY :Syrup");
+    		WriteSocket("SERVER " + serverName + " mUPhegEy9f+fu*acre_= 0 " + SID +" :Syrup");
     		sentCapab = true;
     	}
     	
@@ -170,5 +174,16 @@ public class Syrup {
     	return true;
     }
     
+	public static int getWaffleClientServerName(String servername) {
+			int i = 0;
+			String sname;
+			while (i < WaffleClients.size()) {
+				sname = WaffleClients.get(i).RemoteServerName;
+				System.out.println("LIST: " +i+ " " + sname + " " + servername);
+				if (sname.equalsIgnoreCase(servername)) { return i; }
+				else i++;
+			}
+			return -1;
+	}
 	
 }

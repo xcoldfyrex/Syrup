@@ -6,15 +6,24 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.SocketAddress;
 
 public class WaffleClient implements Runnable {
-	public String RemoteServerID;
-	public String RemoteServerHash;
-	public int RemoteServerPort;
-	public String RemoteServerAddress;
-	public String RemoteServerHostname;
-	public String RemoteServerName;
-	public String RemoveServerVersion;
+	protected String RemoteServerID;
+	protected String RemoteServerHash;
+	protected int RemoteServerPort;
+	protected  SocketAddress RemoteServerAddress;
+	protected String RemoteServerHostname;
+	protected String RemoteServerName;
+	protected String RemoteServerVersion;
+	protected int BurstTS; 
+	protected int LastPong;
+	
+	public boolean capabSent = false;
+	public boolean capabStarted = false;
+	public boolean threadOK = true;
+
+	public boolean burstSent = false;
 	
 	public static Socket waffleSocket;
     
@@ -28,6 +37,7 @@ public class WaffleClient implements Runnable {
     public WaffleClient(Socket clientSocket, String serverText) {
         this.clientSocket = clientSocket;
         this.serverText   = serverText;
+		this.RemoteServerAddress = clientSocket.getRemoteSocketAddress();
     }
 
     public void run() {
@@ -36,14 +46,17 @@ public class WaffleClient implements Runnable {
         {                                
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
-            out.println("CAPAB START 1202");
-            out.flush();
-
-            while(clientSocket.isConnected()) {
-                String clientCommand = in.readLine();          
-                System.out.println("Client Says :" + clientCommand);
-                
-                
+            WriteSocket("CAPAB START 1202");
+            
+            while(clientSocket.isConnected() && threadOK  == true) {
+                String clientCommand = in.readLine();
+                if (clientCommand == null) {
+                    CloseSocket("End of stream.");
+                }
+                else {
+                	ParseLinkCommand(clientCommand);
+                	System.out.println(this.RemoteServerAddress +" ->" + clientCommand);
+                }
             }
         }
         catch(Exception e)
@@ -56,7 +69,7 @@ public class WaffleClient implements Runnable {
             {                    
                 in.close();
                 out.close();
-                clientSocket.close();
+                CloseSocket("Socket closed.");
             }
             catch(IOException ioe)
             {
@@ -65,11 +78,115 @@ public class WaffleClient implements Runnable {
         } 
     }
 	
-	public void ParseLinkCommand(String data) {
+	public boolean ParseLinkCommand(String data) {
+		String[] split = data.split(" ");
+		String remoteSID = "";
+		String command = "";
+		split = data.split(" ");
+		if (split[0].startsWith(":")){
+			split[0] = split[0].substring(1);
+			remoteSID = split[0];
+			command = split[1];
+		}
 		
+		if (command.startsWith("CAPAB START")) {
+			capabStarted = true;
+			return true;
+		}
+		
+		if (command.startsWith("CAPAB END")) {
+			capabSent = true;
+			return true;
+		}
+		
+		if (split[0].startsWith("SERVER")) {
+			if (split.length < 6) {
+				// bad SERVER, add handler
+			}
+			
+			this.RemoteServerName = split[1];
+			this.RemoteServerHash = split[2];
+			this.RemoteServerID = split[4];
+			this.RemoteServerVersion = Format.join(split, " ", 5);
+			
+			int waffleClient = Syrup.getWaffleClientServerName(RemoteServerName);
+			System.out.println("ID " + waffleClient);
+			if (waffleClient >= 0) {
+
+				WriteServices("LINK: Connection to "+RemoteServerName +" failed with error: Server "+RemoteServerName+" already exists!");
+				CloseSocket("ERROR: "+ RemoteServerName +" already exists!");
+				return false;
+			}
+			else {
+				WriteServices("LINK: Verified incoming server connection inbound from "+RemoteServerName +"("+ RemoteServerVersion+")");
+				SendBurst();
+				return true;
+			}
+
+		}	
+		
+
+		if (command.startsWith("BURST")) {
+			if (split.length == 3) {
+				this.BurstTS = Integer.parseInt(split[2]);
+				burstSent = true;
+				WriteServices("LINK: Finished bursting to "+RemoteServerName);
+				WriteSocket(Syrup.pre +"PING " + Syrup.SID + " "+ RemoteServerID);
+				WriteConnectorSocket(":"+Syrup.serverName + " SERVER " + RemoteServerName + " * 0 " + RemoteServerID + " " + RemoteServerVersion);
+				Syrup.WaffleClients.add(this);
+				return true;
+				
+			}
+
+		}
+		
+		
+		return false;
 	}
     
+	public void WriteServices(String data) {
+		WriteConnectorSocket(":" + Syrup.serverName+ " PRIVMSG #services :" + data);
+	}
+	
+	public void CloseSocket(String reason) {
+		if (clientSocket.isConnected()) {
+			int waffleClient = Syrup.getWaffleClientServerName(RemoteServerName);
+			if (waffleClient >= 0) {
+				Syrup.WaffleClients.remove(waffleClient);
+			}
+			WriteSocket(Syrup.pre +reason);
+			WriteConnectorSocket(":" + Syrup.serverName+ " SQUIT " + RemoteServerName + " :" +reason);
+			WriteServices("LINK: Server "+RemoteServerName +" split: " +reason);
+
+			threadOK = false;
+			try {
+				clientSocket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	public void WriteConnectorSocket(String data) {
+    	System.out.println(this.RemoteServerAddress +" <-" + data);
+    	Syrup.out.println(data);
+    	Syrup.out.flush();
+
+    }
+	
+	public  void WriteSocket(String data) {
+    	System.out.println(this.RemoteServerAddress +" <-" + data);
+    	out.println(data);
+		out.flush();
+
+    } 
+	
+	public boolean SendBurst() {
+		WriteSocket(":1SY ENDBURST");
+		return true;
+	}
+	
 	public String getServerID() {
 		return RemoteServerID;
 	}
+	
 }
