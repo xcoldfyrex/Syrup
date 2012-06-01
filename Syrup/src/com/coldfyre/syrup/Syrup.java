@@ -17,6 +17,7 @@ public class Syrup {
 	public static boolean connected = false;
 	public static boolean sentBurst = false;
 	public static boolean sentCapab = false;
+	public static boolean debugMode = true;
 	public static String SID = "1SY";
 	public static String pre = ":" + SID + " ";
 	public static String serverName = "syrup.paradoxirc.net";
@@ -29,27 +30,24 @@ public class Syrup {
 	static WaffleListener waffleListener = null; 
 	private static Thread waffleListenerThread = null;
 	
-
-	
 	public static List<IRCUser> IRCClient = new LinkedList<IRCUser>();
 	public static List<WaffleClient> WaffleClients = new LinkedList<WaffleClient>();
-
+	public static List<WaffleIRCClient> WaffleIRCClients = new LinkedList<WaffleIRCClient>();
 
     public static void main(String[] args) throws IOException {
-
+    	System.out.println("\u001B[1;32m********** Starting ColdFyre's Syrup IRCD **********\u001B[0m");
     	syrupConsole = new SyrupConsole();
 		consoleThread = new Thread(syrupConsole);
 		consoleThread.start();
 		consoleThread.setName("Console Thread");
-		System.out.println("[INFO] Started console thread");
+		System.out.println("\u001B[1;33m[INFO] Started console thread\u001B[0m");
 		
 		waffleListener = new WaffleListener(6667);
     	waffleListenerThread = new Thread(waffleListener);
     	waffleListenerThread.start();
     	waffleListenerThread.setName("Waffle Listener Thread");
-		System.out.println("[INFO] Started client listener thread");
+		System.out.println("\u001B[1;33m[INFO] Started client listener thread\u001B[0m");
 
-    	System.out.println("********** Starting ColdFyre's Syrup IRCD **********");
     	
         if (openConnectorSocket()) {
         	connected = true;
@@ -60,10 +58,12 @@ public class Syrup {
         		String connectorStream = in.readLine();
         		
         		if (connectorStream == null) {
-        			System.out.println("[WARN] Lost link to " + connectorHost);
+        			System.out.println("\u001B[1;33m[WARN] Lost link to " + connectorHost+"\u001B[0m");
         			closeConnectorSocket();
         		} else {
-        			System.out.println("->" + connectorStream);
+        			if (debugMode) {
+        				System.out.println("->" + connectorStream);
+        			}
         			ParseLinkCommand(connectorStream);
         		}
             
@@ -91,6 +91,7 @@ public class Syrup {
 			command = split[1];
 		}
 		if (data.startsWith("ERROR")) {
+			System.out.println("\u001B[1;31m[ERROR] "+ data +" \u001B[0m");
 			closeConnectorSocket();
 		}
 		//Got a PING
@@ -134,36 +135,39 @@ public class Syrup {
     }
     
     public static void WriteSocket(String data) {
-    	System.out.println("<-" + data);
+		if (debugMode) {
+			System.out.println("<-" + data);
+		}
     	out.println(data);
 
     }
     
     public static boolean openConnectorSocket() {
     	if (connected) {
-        	System.out.println("[WARNING] Somehow tried to open socket twice?");
+        	System.out.println("\u001B[1;31m[ERROR] Somehow tried to open connector socket twice?\u001B[0m");
         	return true;
     	}
-    	System.out.println("[INFO] Connecting to peer");
-
+    	System.out.println("\u001B[1;33m[INFO] Connecting to server: "+connectorHost+"\u001B[0m");
+    	sentBurst = false;
+    	sentCapab = false;
         try {
         	connectorSocket = new Socket(connectorHost, connectorPort);
             out = new PrintStream(connectorSocket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(connectorSocket.getInputStream()));
         } catch (UnknownHostException e) {
-            System.err.println("[ERROR] DNS Failure");
+            System.err.println("\u001B[1;31m[ERROR] DNS Failure\u001B[0m");
             return false;
         } catch (IOException e) {
-            System.err.println("[ERROR] Can't connect to: " + connectorHost + " Reason:" +e);
+            System.err.println("\u001B[1;31m[ERROR] Can't connect to: " + connectorHost + " Reason:" +e +"\u001B[0m");
             return false;
         }
-    	System.out.println("[OK] Connected to peer");
+    	System.out.println("\u001B[1;32m[OK] Connected to server: "+connectorHost + "\u001B[0m");
     	
     	return true;
     }
     
     public static boolean closeConnectorSocket() {
-		System.out.println("[INFO] Shutdown connector socket");
+		System.out.println("\u001B[1;33m[INFO] Shutdown connector socket\u001B[0m");
     	connected = false;
     	sentBurst = false;
     	sentCapab = false;

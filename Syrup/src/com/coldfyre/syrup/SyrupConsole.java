@@ -24,8 +24,18 @@ public class SyrupConsole implements Runnable {
 				String[] userInputArgs = userInput.split(" ");
 				if (userInputArgs[0].equalsIgnoreCase("HELP")) {
 					System.out.println("ColdFyre's Syrup IRCD");
-					System.out.println("Commands: help, clients, whois <user>, chan <channel>, links, squit <server>, connect, stop");
+					System.out.println("Commands: debug on|off, help, clients, whois <user>, chan <channel>, links, squit <server>, connect, stop");
 				} 
+				
+				else if (userInputArgs[0].equalsIgnoreCase("DEBUG")) {
+					if (userInputArgs[1].equalsIgnoreCase("ON")) {
+						Syrup.debugMode = true;
+					}
+					else {
+						Syrup.debugMode = false;
+					}
+				}
+				
 				else if (userInputArgs[0].equalsIgnoreCase("SQUIT")) 
 				{
 					Syrup.closeConnectorSocket();

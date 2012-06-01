@@ -55,7 +55,9 @@ public class WaffleClient implements Runnable {
                 }
                 else {
                 	ParseLinkCommand(clientCommand);
-                	System.out.println(this.RemoteServerAddress +" ->" + clientCommand);
+                	if (Syrup.debugMode) {
+                		System.out.println(this.RemoteServerAddress +" ->" + clientCommand);
+                	}
                 }
             }
         }
@@ -89,7 +91,12 @@ public class WaffleClient implements Runnable {
 			command = split[1];
 		}
 		
+		if (data.startsWith("ERROR")){
+			System.out.println("\u001B[1;31m[ERROR]"+ data +" \u001B[0m");
+
+		}
 		if (command.startsWith("CAPAB START")) {
+	    	System.out.println("\u001B[1;33m[INFO] Incoming link from: "+this.RemoteServerAddress + "\u001B[0m");
 			capabStarted = true;
 			return true;
 		}
@@ -134,6 +141,7 @@ public class WaffleClient implements Runnable {
 				WriteSocket(Syrup.pre +"PING " + Syrup.SID + " "+ RemoteServerID);
 				WriteConnectorSocket(":"+Syrup.serverName + " SERVER " + RemoteServerName + " * 0 " + RemoteServerID + " " + RemoteServerVersion);
 				Syrup.WaffleClients.add(this);
+		    	System.out.println("\u001B[1;33m[INFO] Incoming link completed: " + RemoteServerName+ " "+this.RemoteServerAddress + "\u001B[0m");
 				return true;
 				
 			}
@@ -154,6 +162,7 @@ public class WaffleClient implements Runnable {
 			if (waffleClient >= 0) {
 				Syrup.WaffleClients.remove(waffleClient);
 			}
+	    	System.out.println("\u001B[1;33m[INFO] Lost client link: " + RemoteServerName+ " "+this.RemoteServerAddress + " " + reason + "\u001B[0m");
 			WriteSocket(Syrup.pre +reason);
 			WriteConnectorSocket(":" + Syrup.serverName+ " SQUIT " + RemoteServerName + " :" +reason);
 			WriteServices("LINK: Server "+RemoteServerName +" split: " +reason);
@@ -167,14 +176,18 @@ public class WaffleClient implements Runnable {
 		}
 	}
 	public void WriteConnectorSocket(String data) {
-    	System.out.println(this.RemoteServerAddress +" <-" + data);
+		if (Syrup.debugMode) {
+			System.out.println(this.RemoteServerAddress +" <-" + data);
+		}
     	Syrup.out.println(data);
     	Syrup.out.flush();
 
     }
 	
-	public  void WriteSocket(String data) {
-    	System.out.println(this.RemoteServerAddress +" <-" + data);
+	public void WriteSocket(String data) {
+		if (Syrup.debugMode) {
+			System.out.println(this.RemoteServerAddress +" <-" + data);
+		}
     	out.println(data);
 		out.flush();
 
