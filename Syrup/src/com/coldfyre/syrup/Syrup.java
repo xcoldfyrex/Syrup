@@ -1,9 +1,12 @@
 package com.coldfyre.syrup;
 
 import java.net.*;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.io.*;
+
+import com.coldfyre.syrup.UIDGen;
 
 public class Syrup {
 
@@ -32,7 +35,9 @@ public class Syrup {
 	
 	public static List<IRCUser> IRCClient = new LinkedList<IRCUser>();
 	public static List<WaffleClient> WaffleClients = new LinkedList<WaffleClient>();
-	public static List<WaffleIRCClient> WaffleIRCClients = new LinkedList<WaffleIRCClient>();
+	public static HashMap<String, WaffleIRCClient> WaffleIRCClients = new HashMap<String, WaffleIRCClient>();
+	
+	public static UIDGen uidgen = new UIDGen();
 
     public static void main(String[] args) throws IOException {
     	System.out.println("\u001B[1;32m********** Starting ColdFyre's Syrup IRCD **********\u001B[0m");

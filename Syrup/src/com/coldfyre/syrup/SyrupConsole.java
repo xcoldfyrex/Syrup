@@ -62,6 +62,25 @@ public class SyrupConsole implements Runnable {
 						i++;
 					}
 				}
+				
+				else if (userInputArgs[0].equalsIgnoreCase("CLIENTS")) {
+					if (Syrup.WaffleIRCClients.size() != 0) {
+						String name,sid,host;
+						System.out.println("I have " + Syrup.WaffleIRCClients.size() + " client(s) connected:");
+						for (String key : Syrup.WaffleIRCClients.keySet()) {
+							WaffleIRCClient person;
+							person = Syrup.WaffleIRCClients.get(key);
+							sid = person.SID;
+							name = person.nick;
+							host = person.host;
+							System.out.println(name + "\t" + key + "\t " + sid + "\t " + host);
+						}
+					} 
+					else {
+						System.out.println("No clients connected!");
+					}
+				}
+				
 				else if (userInputArgs[0].equalsIgnoreCase("STOP")) 
 				{
 					System.out.println("Shutting down..");
