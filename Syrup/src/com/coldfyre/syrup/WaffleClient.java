@@ -115,7 +115,8 @@ public class WaffleClient implements Runnable {
 			
 			this.RemoteServerName = split[1];
 			this.RemoteServerHash = split[2];
-			this.RemoteServerID = split[4];
+			SIDGen SID = new SIDGen();
+			RemoteServerID = SID.generateSID();
 			this.RemoteServerVersion = Format.join(split, " ", 5);
 			
 			int waffleClient = Syrup.getWaffleClientServerName(RemoteServerName);
@@ -170,18 +171,49 @@ public class WaffleClient implements Runnable {
 		}
 		
 		if (command.startsWith("FJOIN")){
-			String channel = split[2];
-			WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + channel + " " + System.currentTimeMillis() / 1000L + " +nt " + split[5]);
+			//at present, this only supports one nick
+			if (split.length == 6) {
+				String channel = split[2];
+				String[] joinedUsersNick = split[5].split(",");
+				if (joinedUsersNick.length >= 1) {
+					for (String key : Syrup.WaffleIRCClients.keySet()) {
+						String SID,nick;
+						WaffleIRCClient person;
+						person = Syrup.WaffleIRCClients.get(key);
+						SID = person.SID;
+						nick = person.nick;
+						System.out.println(SID + " " + nick);
+						if (nick.equalsIgnoreCase(joinedUsersNick[1]) && SID.equalsIgnoreCase(RemoteServerID)) { 
+							WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + channel + " " + System.currentTimeMillis() / 1000L + " +nt :," + key);
+						}
+					}
+					
+				}
+				else {
+					CloseSocket("PROTCOL ERROR: MALFORMED FJOIN");
+				}
+				
+			}
 		}
 		
 		if (command.startsWith("UID")) {
-			if (split.length >= 13) {
-				WaffleIRCClient waffleircclient = new WaffleIRCClient(split[4],split[5],false,RemoteServerID,System.currentTimeMillis() / 1000L);
-				Syrup.WaffleIRCClients.put(split[2], waffleircclient);
+			if (split.length >= 11) {
+				
+				WaffleIRCClient waffleircclient = new WaffleIRCClient(split[3],split[4],false,RemoteServerID,System.currentTimeMillis() / 1000L);
 				String UID = Syrup.uidgen.generateUID(RemoteServerID);
-				System.out.println("\u001B[1;33m[INFO] JOIN " + split[2] + " from " + RemoteServerID + "\u001B[0m");
-				WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[4]  + " " + split[5] + " " + split[5] + " " + split[4] + " " + "127.0.0.0 " + System.currentTimeMillis() / 1000L + " +r : Dot");
+				Syrup.WaffleIRCClients.put(UID, waffleircclient);
+				System.out.println("\u001B[1;33m[INFO] JOIN " + UID + " from " + RemoteServerID + "\u001B[0m");
+				WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + " " + split[3] + " " + split[5] + " " + split[4] + " " + "127.0.0.0 " + System.currentTimeMillis() / 1000L + " +r : Dot");
 			}
+		}
+		
+		if (command.startsWith("PRIVMSG")) {
+			if (split[3].startsWith(":")) split[3] = split[3].substring(1);
+			if (split[2].startsWith(":")) split[2] = split[2].substring(1);
+			String message = Format.join(split, " ", 3);
+			String target = split[2];
+			WriteConnectorSocket(":" + split[0] + " PRIVMSG " + target + " :" + message);
+			
 		}
 		
 		
@@ -193,14 +225,20 @@ public class WaffleClient implements Runnable {
 	}
 	
 	public void CloseSocket(String reason) {
-		Syrup.WaffleIRCClients.remove(RemoteServerID+"*");
+		int i = 0;
+		if (Syrup.WaffleIRCClients.size() != 0) {
+			for (String key : Syrup.WaffleIRCClients.keySet()) {
+				if (key.startsWith(RemoteServerID)) Syrup.WaffleIRCClients.remove(key);
+				i++;
+			}
+		} 
 		
 		if (clientSocket.isConnected()) {
 			int waffleClient = Syrup.getWaffleClientServerName(RemoteServerName);
 			if (waffleClient >= 0) {
 				Syrup.WaffleClients.remove(waffleClient);
 			}
-	    	System.out.println("\u001B[1;33m[INFO] Lost client link: " + RemoteServerName+ " "+this.RemoteServerAddress + " " + reason + "\u001B[0m");
+	    	System.out.println("\u001B[1;33m[INFO] Lost client link: " + RemoteServerName+ " "+this.RemoteServerAddress + " " + reason + " (lost " + i + " clients)\u001B[0m");
 			WriteSocket(Syrup.pre +reason);
 			WriteConnectorSocket(":" + Syrup.serverName+ " SQUIT " + RemoteServerName + " :" +reason);
 			WriteServices("LINK: Server "+RemoteServerName +" split: " +reason);

@@ -125,6 +125,18 @@ public class Syrup {
     		sentCapab = true;
     	}
     	
+		if (command.startsWith("PRIVMSG")) {
+			if (split[3].startsWith(":")) split[3] = split[3].substring(1);
+			if (split[2].startsWith(":")) split[2] = split[2].substring(1);
+			String message = Format.join(split, " ", 3);
+			String target = split[2];
+			//WriteConnectorSocket(":" + split[0] + " PRIVMSG " + target + " :" + message);
+			
+		}
+		
+		if (command.startsWith("IDLE")) {
+			WriteSocket(":" + split[2] + " IDLE " + split[0] + " 0 0");
+		}
     	
     	return true;
     }
