@@ -23,8 +23,8 @@ public class SyrupConsole implements Runnable {
 			if ( userInput != null) {
 				String[] userInputArgs = userInput.split(" ");
 				if (userInputArgs[0].equalsIgnoreCase("HELP")) {
-					System.out.println("ColdFyre's Syrup IRCD");
-					System.out.println("Commands: debug on|off, help, clients, whois <user>, chan <channel>, links, squit <server>, connect, stop");
+					Syrup.log.def("ColdFyre's Syrup IRCD", "LIGHT_CYAN");
+					Syrup.log.def("Commands: debug on|off, help, clients, whois <user>, chan <channel>, links, squit <server>, connect, stop", "LIGHT_CYAN");
 				} 
 				
 				else if (userInputArgs[0].equalsIgnoreCase("DEBUG")) {
@@ -58,7 +58,7 @@ public class SyrupConsole implements Runnable {
 						sname = Syrup.WaffleClients.get(i).RemoteServerName;
 						saddy = Syrup.WaffleClients.get(i).RemoteServerAddress;
 						sver = Syrup.WaffleClients.get(i).RemoteServerVersion;
-						System.out.println(sname + " " + saddy + " " + sver);
+						System.out.println(sname + "\t" + saddy + "\t" + sver);
 						i++;
 					}
 				}
@@ -66,7 +66,8 @@ public class SyrupConsole implements Runnable {
 				else if (userInputArgs[0].equalsIgnoreCase("CLIENTS")) {
 					if (Syrup.WaffleIRCClients.size() != 0) {
 						String name,sid,host;
-						System.out.println("I have " + Syrup.WaffleIRCClients.size() + " client(s) connected:");
+						Syrup.log.def("I have " + Syrup.WaffleIRCClients.size() + " WaffleIRC client(s) connected:", "LIGHT_CYAN");
+						Syrup.log.def("=======================================", "LIGHT_CYAN");
 						for (String key : Syrup.WaffleIRCClients.keySet()) {
 							WaffleIRCClient person;
 							person = Syrup.WaffleIRCClients.get(key);
@@ -77,19 +78,35 @@ public class SyrupConsole implements Runnable {
 						}
 					} 
 					else {
-						System.out.println("No clients connected!");
+						System.out.println("No WaffleIRC clients connected!");
 					}
+					synchronized(Syrup.csIRCClient) {
+						Syrup.log.def("I have " + Syrup.IRCClient.size() + " IRC client(s) connected:", "LIGHT_CYAN");
+						Syrup.log.def("=======================================","LIGHT_CYAN");
+						int i = 0;
+						String name,host,UID;
+
+						while (i < Syrup.IRCClient.size()) {
+							name = Syrup.IRCClient.get(i).nick;
+							host = Syrup.IRCClient.get(i).realhost;
+							UID = Syrup.IRCClient.get(i).UID;
+
+							System.out.println(name + "\t\t" + "\t" + UID + "\t" + host);
+							i++;
+						}
+					}
+					
 				}
 				
 				else if (userInputArgs[0].equalsIgnoreCase("STOP")) 
 				{
-					System.out.println("Shutting down..");
+					Syrup.log.info("Shutting down..(caught shutdown from user)", "LIGHT_RED");
 					Syrup.closeConnectorSocket();
 					System.exit(1);
 				}
 				else 
 				{	
-					System.out.println("Unkown command, see /help");
+					Syrup.log.def("Unkown command, see /help", "LIGHT_CYAN");
 
 				}
 			}

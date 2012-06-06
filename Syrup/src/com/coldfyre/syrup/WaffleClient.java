@@ -9,6 +9,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 
 import com.coldfyre.syrup.WaffleIRCClient;
+import com.coldfyre.syrup.TS6.UID;
 
 public class WaffleClient implements Runnable {
 	protected String RemoteServerID;
@@ -84,12 +85,10 @@ public class WaffleClient implements Runnable {
 	
 	public boolean ParseLinkCommand(String data) {
 		String[] split = data.split(" ");
-		String remoteSID = "";
 		String command = "";
 		split = data.split(" ");
 		if (split[0].startsWith(":")){
 			split[0] = split[0].substring(1);
-			remoteSID = split[0];
 			command = split[1];
 		}
 		
@@ -146,7 +145,7 @@ public class WaffleClient implements Runnable {
 				Syrup.WaffleClients.add(this);
 				//String UID = Syrup.uidgen.generateUID(RemoteServerID);
 				//WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + UID  + " " + RemoteServerName + " " + RemoteServerName + " Andy Dick " + "127.0.0.0 " + System.currentTimeMillis() / 1000L + " +r : Dot");
-		    	System.out.println("\u001B[1;33m[INFO] Incoming link completed: " + RemoteServerName+ " "+this.RemoteServerAddress + "\u001B[0m");
+		    	Syrup.log.info("Incoming link completed: " + RemoteServerName+ " "+this.RemoteServerAddress, "LIGHT_YELLOW");
 				return true;
 				
 			}
@@ -154,9 +153,11 @@ public class WaffleClient implements Runnable {
 		}
 		
 		if (command.startsWith("QUIT")) {
-			WaffleIRCClient person;
-			if ((person = Syrup.WaffleIRCClients.get(split[0])) != null) {
-				Syrup.WaffleIRCClients.remove(person);
+			String senderUID;
+			senderUID = UID.GetWaffleClientUID(split[0]);
+
+			if (senderUID != null) {
+				Syrup.WaffleIRCClients.remove(senderUID);
 				String reason;
 				if (split.length > 2) {
 					reason = Format.join(split, " ", 2);
@@ -165,9 +166,9 @@ public class WaffleClient implements Runnable {
 				else {
 					reason = "";
 				}
-				WriteConnectorSocket(":" + split[0] + " QUIT :" + reason);
+				WriteConnectorSocket(":" + senderUID + " QUIT :" + reason);
 			}
-			System.out.println("\u001B[1;33m[INFO] QUIT " + split[0] + " from " + RemoteServerID + "\u001B[0m");
+			Syrup.log.info("QUIT " + split[0] + " from " + RemoteServerID, "LIGHT_GREEN");
 		}
 		
 		if (command.startsWith("FJOIN")){
@@ -176,18 +177,13 @@ public class WaffleClient implements Runnable {
 				String channel = split[2];
 				String[] joinedUsersNick = split[5].split(",");
 				if (joinedUsersNick.length >= 1) {
-					for (String key : Syrup.WaffleIRCClients.keySet()) {
-						String SID,nick;
-						WaffleIRCClient person;
-						person = Syrup.WaffleIRCClients.get(key);
-						SID = person.SID;
-						nick = person.nick;
-						System.out.println(SID + " " + nick);
-						if (nick.equalsIgnoreCase(joinedUsersNick[1]) && SID.equalsIgnoreCase(RemoteServerID)) { 
-							WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + channel + " " + System.currentTimeMillis() / 1000L + " +nt :," + key);
-						}
+					String senderUID,SID, tempnick;
+					senderUID = UID.GetWaffleClientUID(joinedUsersNick[1]);
+					SID = UID.GetWaffleClientSID(joinedUsersNick[1]);
+					tempnick = UID.GetWaffleClientNick(joinedUsersNick[1]);
+					if (tempnick.equalsIgnoreCase(joinedUsersNick[1]) && SID.equalsIgnoreCase(RemoteServerID)) { 
+						WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + channel + " " + System.currentTimeMillis() / 1000L + " +nt :," + senderUID);
 					}
-					
 				}
 				else {
 					CloseSocket("PROTCOL ERROR: MALFORMED FJOIN");
@@ -198,24 +194,26 @@ public class WaffleClient implements Runnable {
 		
 		if (command.startsWith("UID")) {
 			if (split.length >= 11) {
-				
-				WaffleIRCClient waffleircclient = new WaffleIRCClient(split[3],split[4],false,RemoteServerID,System.currentTimeMillis() / 1000L);
-				String UID = Syrup.uidgen.generateUID(RemoteServerID);
-				Syrup.WaffleIRCClients.put(UID, waffleircclient);
-				System.out.println("\u001B[1;33m[INFO] JOIN " + UID + " from " + RemoteServerID + "\u001B[0m");
-				WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + " " + split[3] + " " + split[5] + " " + split[4] + " " + "127.0.0.0 " + System.currentTimeMillis() / 1000L + " +r : Dot");
+				if ((UID.GetWaffleClientUID(split[3])) == null) {
+					WaffleIRCClient waffleircclient = new WaffleIRCClient(split[3],split[4],false,RemoteServerID,System.currentTimeMillis() / 1000L);
+					String UID = Syrup.uidgen.generateUID(RemoteServerID);
+					Syrup.WaffleIRCClients.put(UID, waffleircclient);
+					Syrup.log.info("JOIN " + UID + "->" + split[3]+ " from " + RemoteServerID, "LIGHT_GREEN");
+					WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + "/mc " + split[3] + " " + split[5] + " " + split[3] + " " + "127.0.0.0 " + System.currentTimeMillis() / 1000L + " +r :Dot");
+				}
 			}
 		}
 		
 		if (command.startsWith("PRIVMSG")) {
 			if (split[3].startsWith(":")) split[3] = split[3].substring(1);
 			if (split[2].startsWith(":")) split[2] = split[2].substring(1);
+			String sourceUID = split[0];
+			sourceUID = UID.GetWaffleClientUID(sourceUID);
 			String message = Format.join(split, " ", 3);
 			String target = split[2];
-			WriteConnectorSocket(":" + split[0] + " PRIVMSG " + target + " :" + message);
+			WriteConnectorSocket(":" + sourceUID + " PRIVMSG " + target + " :" + message);
 			
 		}
-		
 		
 		return false;
 	}
@@ -238,7 +236,7 @@ public class WaffleClient implements Runnable {
 			if (waffleClient >= 0) {
 				Syrup.WaffleClients.remove(waffleClient);
 			}
-	    	System.out.println("\u001B[1;33m[INFO] Lost client link: " + RemoteServerName+ " "+this.RemoteServerAddress + " " + reason + " (lost " + i + " clients)\u001B[0m");
+	    	Syrup.log.info("Lost client link: " + RemoteServerName+ " "+this.RemoteServerAddress + " " + reason + " (lost " + i + " clients)", "LIGHT_YELLOW" );
 			WriteSocket(Syrup.pre +reason);
 			WriteConnectorSocket(":" + Syrup.serverName+ " SQUIT " + RemoteServerName + " :" +reason);
 			WriteServices("LINK: Server "+RemoteServerName +" split: " +reason);

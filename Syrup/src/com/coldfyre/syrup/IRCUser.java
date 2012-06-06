@@ -2,24 +2,24 @@ package com.coldfyre.syrup;
 
 public class IRCUser {
 
-	public IRCUser(String nick,String realname,String ident, String hostmask, String ipaddress, String modes, String customWhois, boolean isRegistered, boolean isOper, String awayMsg, long signonTime, long lastActivity) {
+	public IRCUser(String server, String UID, long signonTime, String nick, String realhost, String hostmask, String ident, String ipaddress, long lastActivity, String modes, String realname) {
+		this.UID = UID;
 		this.nick = nick;
 		this.realname = realname;
 		this.ident = ident;
 		this.hostmask = hostmask;
-		this.realhost = hostmask;
+		this.realhost = realhost;
 		this.ipaddress = ipaddress;
 		this.modes = modes;
-		this.textModes = modes.replace("~", "q").replace("&", "a").replace("@", "o").replace("%", "h").replace("+", "v");
-		this.customWhois = customWhois;
-		this.isRegistered = isRegistered;
-		this.isOper = isOper;
-		this.awayMsg = awayMsg;
+		this.ident = ident;
+		this.realname = realname;
 		this.signonTime = signonTime;
 		this.lastActivity = lastActivity;
-		this.joined = true;
+		this.SID = server;
+		Syrup.IRCClient.add(this);
 	}
 	
+	/*
 	public IRCUser(String nick,String realname,String ident, String hostmask, String vhost, String ipaddress, String modes, String customWhois, boolean isRegistered, boolean isOper, String awayMsg, long signonTime, long lastActivity) {
 		this.nick = nick;
 		this.realname = realname;
@@ -37,6 +37,7 @@ public class IRCUser {
 		this.lastActivity = lastActivity;
 		this.joined = false;
 	}
+	*/
 	
 	public void setModes(String mode) {
 		this.textModes = mode.replace("~", "q").replace("&", "a").replace("@", "o").replace("%", "h").replace("+", "v").replaceAll("[^A-Za-z0-9 ]", "");
@@ -47,14 +48,7 @@ public class IRCUser {
 		return this.modes;
 	}
 	
-	public String getTextModes() {
-		return this.textModes;
-	}
-	
-	public void setConsoleModes(String mode) {
-		this.consoleTextModes = mode.replace("~", "q").replace("&", "a").replace("@", "o").replace("%", "h").replace("+", "v").replaceAll("[^A-Za-z0-9 ]", "");
-		this.consoleModes = consoleTextModes.replace("q", "~").replace("a", "&").replace("o", "@").replace("h", "%").replace("v", "+");
-	}
+
 	
 	public String getConsoleModes() {
 		return this.consoleModes;
@@ -65,16 +59,10 @@ public class IRCUser {
 	}
 	
 	
-	public String nick,realname,ident,hostmask,realhost,ipaddress;
+	public String nick,realname,ident,hostmask,realhost,ipaddress,UID,SID;
 	private String modes="",textModes="";
 	private String consoleModes="", consoleTextModes="";
-	public String customWhois=""; // Not used yet
-	//public boolean isIdented = false;
-	//public boolean isNickSet = false;
-	public boolean isRegistered = false;
-	public boolean isOper = false;
-	public boolean joined = false; // Whether the user has joined the plugin channel
-	public String awayMsg = "";
+
 	//public long lastPingResponse;
 	public long signonTime;
 	public long lastActivity;
