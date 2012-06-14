@@ -43,10 +43,7 @@ public class SyrupConsole implements Runnable {
 				else if (userInputArgs[0].equalsIgnoreCase("CONNECT")) 
 				{
 					
-					if (Syrup.openConnectorSocket()) {
-			        	Syrup.connected = true;
-
-					}
+					Syrup.openConnectorSocket();					
 
 				} 
 				else if (userInputArgs[0].equalsIgnoreCase("LINKS")) {
@@ -63,6 +60,21 @@ public class SyrupConsole implements Runnable {
 					}
 				}
 				
+				else if (userInputArgs[0].equalsIgnoreCase("CHANNELS")) {
+					if (Syrup.IRCChannels.size() != 0) {
+						String name,modes;
+						Syrup.log.def("I have " + Syrup.IRCChannels.size() + " Channels formed:", "LIGHT_CYAN");
+						Syrup.log.def("=======================================", "LIGHT_CYAN");
+						for (String key : Syrup.IRCChannels.keySet()) {
+							IRCChannel channel;
+							channel = Syrup.IRCChannels.get(key);
+							name = channel.getChannelName();
+							modes = channel.getChannelModes();
+							System.out.println(name + "\t"  + modes + "\t " + channel.getUserCount());
+						}
+					}
+				}
+			
 				else if (userInputArgs[0].equalsIgnoreCase("CLIENTS")) {
 					if (Syrup.WaffleIRCClients.size() != 0) {
 						String name,sid,host;

@@ -46,6 +46,7 @@ public class Syrup {
 	public static HashMap<String, IRCUser> IRCClient = new HashMap<String, IRCUser>();
 	public static List<WaffleClient> WaffleClients = new LinkedList<WaffleClient>();
 	public static HashMap<String, WaffleIRCClient> WaffleIRCClients = new HashMap<String, WaffleIRCClient>();
+	public static HashMap<String, IRCChannel> IRCChannels = new HashMap<String, IRCChannel>();
 	
 	public static UIDGen uidgen = new UIDGen();
 
@@ -63,11 +64,12 @@ public class Syrup {
     	waffleListenerThread.start();
     	waffleListenerThread.setName("Waffle Listener Thread");
     	log.info("Started client listener thread", "LIGHT_GREEN");
-
     	
         if (openConnectorSocket()) {
         	connected = true;
         }
+    	out = new PrintStream(connectorSocket.getOutputStream(), true);
+        in = new BufferedReader(new InputStreamReader(connectorSocket.getInputStream()));
         
         while (running) {
         	while (connected && connectorSocket != null) {
@@ -85,17 +87,16 @@ public class Syrup {
             
         		if (sentCapab && ! sentBurst){
         			SendBurst();
-        		}       
+        		} 
+        		if (!connectorSocket.isConnected()) {
+        	    	log.info("Connector socket lost connection" , "LIGHT_YELLOW");
+        		}
         	}
         }
         
-        
-        
-        //out.close();
-        in.close();
-        //stdIn.close();
-        connectorSocket.close();
+    	log.info("Exiting main loop, terminating." , "LIGHT_YELLOW");
 	}
+    
     public static boolean ParseLinkCommand(String data) {
 		String[] split = data.split(" ");
 		String remoteSID = "";
@@ -115,9 +116,27 @@ public class Syrup {
 			WriteSocket(pre+"PONG 1SY "+ remoteSID);
 		}
 		
+		if (command.equalsIgnoreCase("FJOIN")) {
+			if (IRCChannels.get(split[2]) != null) {
+				IRCChannels.get(split[2]).addUser(split[5], "r");
+			}
+			else {
+				long TS = 0;//Long.getLong(split[3]);
+				IRCChannel channel = new IRCChannel(split[2], TS, split[4]);
+				IRCChannels.put(split[2], channel);
+				IRCChannels.get(split[2]).addUser(split[5], "r");
+			}
+		}
+		
 		if (command.equalsIgnoreCase("UID")) {
 			UID.add(split);
 			WriteWaffleSockets(pre + "UID " + split[4] + " " + split[6] + " "+  split[7]);
+		}
+		
+		if (command.equalsIgnoreCase("PART")) {
+			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " PART " + split[2]);
+			//IRCChannels.get(split[2]).addUser(split[5], "r");
+
 		}
 		
 		if (command.equalsIgnoreCase("QUIT")) {
@@ -191,13 +210,15 @@ public class Syrup {
         	log.error("Somehow tried to open connector socket twice?" , "LIGHT_RED");
         	return true;
     	}
+    	if (connectorSocket != null) {
+    			try { connectorSocket.close(); } catch (IOException e) { }
+    			connectorSocket = null;
+    	}
     	log.info("Connecting to server: "+connectorHost,"LIGHT_GREEN");
     	sentBurst = false;
     	sentCapab = false;
         try {
         	connectorSocket = new Socket(connectorHost, connectorPort);
-            out = new PrintStream(connectorSocket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(connectorSocket.getInputStream()));
         } catch (UnknownHostException e) {
         	log.error("DNS Failure", "LIGHT_RED");
             return false;
@@ -205,8 +226,12 @@ public class Syrup {
         	log.error("Can't connect to: " + connectorHost + " Reason:" +e, "LIGHT_RED");
             return false;
         }
+        if (connectorSocket == null) {
+        	log.error("Failed connect to: " + connectorHost, "LIGHT_RED");
+        	return false;
+        }
         log.info("Connected to server: "+connectorHost, "LIGHT_GREEN");
-    	
+        connected = true;
     	return true;
     }
     
