@@ -16,7 +16,7 @@ public class IRCUser {
 		this.signonTime = signonTime;
 		this.lastActivity = lastActivity;
 		this.SID = server;
-		Syrup.IRCClient.add(this);
+		Syrup.IRCClient.put(UID, this);
 	}
 	
 	/*
@@ -48,7 +48,14 @@ public class IRCUser {
 		return this.modes;
 	}
 	
-
+	public static String getNick(String UID){
+		for (String key : Syrup.IRCClient.keySet()) {
+			IRCUser person;
+			person = Syrup.IRCClient.get(key);
+    		if (key.equalsIgnoreCase(UID)) return person.nick;
+    	}
+			return null;
+	}
 	
 	public String getConsoleModes() {
 		return this.consoleModes;

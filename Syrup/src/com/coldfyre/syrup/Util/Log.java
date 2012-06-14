@@ -28,7 +28,8 @@ public class Log {
 	 }
 
 	 private void echo(String message) {
-		 System.out.println(message + "\u001B[0m");
+		 java.util.Date time=new java.util.Date((long)System.currentTimeMillis());
+		 System.out.println("["+ time + "] "+ message + "\u001B[0m");
 	 }
 
 	 private static String colorConvert(String color) {

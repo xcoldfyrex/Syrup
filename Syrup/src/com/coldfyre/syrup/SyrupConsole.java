@@ -85,13 +85,23 @@ public class SyrupConsole implements Runnable {
 						Syrup.log.def("=======================================","LIGHT_CYAN");
 						int i = 0;
 						String name,host,UID;
+						
+						for (String key : Syrup.IRCClient.keySet()) {
+							IRCUser person;
+							person = Syrup.IRCClient.get(key);
 
-						while (i < Syrup.IRCClient.size()) {
-							name = Syrup.IRCClient.get(i).nick;
-							host = Syrup.IRCClient.get(i).realhost;
-							UID = Syrup.IRCClient.get(i).UID;
-
-							System.out.println(name + "\t\t" + "\t" + UID + "\t" + host);
+							name = person.nick;
+							host = person.realhost;
+							UID = person.UID;
+							if (name.length() <= 7) {
+								System.out.println(name + "\t\t\t" + "\t" + UID + "\t" + host);
+							}
+							else if (name.length() <= 14)  {
+								System.out.println(name + "\t\t" + "\t" + UID + "\t" + host);
+							}
+							else {
+								System.out.println(name + "\t" + "\t" + UID + "\t" + host);
+							}
 							i++;
 						}
 					}

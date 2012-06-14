@@ -19,6 +19,14 @@ public class UID {
 		 */
 	}
 	
+	public void updateUID(String UID) {
+		
+	}
+	
+	public void removeUID(String UID) {
+		Syrup.IRCClient.remove(UID);
+	}
+	
 	public static String GetWaffleClientUID(String nickname) {
 		for (String key : Syrup.WaffleIRCClients.keySet()) {
 			WaffleIRCClient person;

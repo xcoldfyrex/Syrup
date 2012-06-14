@@ -4,7 +4,6 @@ import java.net.*;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.logging.Logger;
 import java.io.*;
 
 import com.coldfyre.syrup.UIDGen;
@@ -44,7 +43,7 @@ public class Syrup {
 	static WaffleListener waffleListener = null; 
 	private static Thread waffleListenerThread = null;
 	
-	public static List<IRCUser> IRCClient = new LinkedList<IRCUser>();
+	public static HashMap<String, IRCUser> IRCClient = new HashMap<String, IRCUser>();
 	public static List<WaffleClient> WaffleClients = new LinkedList<WaffleClient>();
 	public static HashMap<String, WaffleIRCClient> WaffleIRCClients = new HashMap<String, WaffleIRCClient>();
 	
@@ -79,7 +78,7 @@ public class Syrup {
         			closeConnectorSocket();
         		} else {
         			if (debugMode) {
-        				System.out.println("->" + connectorStream);
+        				log.def("[IN] " + connectorStream, "");
         			}
         			ParseLinkCommand(connectorStream);
         		}
@@ -118,6 +117,20 @@ public class Syrup {
 		
 		if (command.equalsIgnoreCase("UID")) {
 			UID.add(split);
+			WriteWaffleSockets(pre + "UID " + split[4] + " " + split[6] + " "+  split[7]);
+		}
+		
+		if (command.equalsIgnoreCase("QUIT")) {
+			String reason;
+			reason = Format.join(split, " ", 2);
+			if (reason.startsWith(":")) reason = reason.substring(1);
+			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " QUIT " + reason);
+			UID.removeUID(split[0]);
+		}
+		
+		if (command.startsWith("NICK")) {
+			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " NICK " + split[2]);
+			IRCClient.get(split[0]).nick = split[2];
 		}
 		
     	if (data.equalsIgnoreCase("CAPAB START 1202")) {
@@ -131,10 +144,12 @@ public class Syrup {
 		if (command.startsWith("PRIVMSG")) {
 			if (split[3].startsWith(":")) split[3] = split[3].substring(1);
 			if (split[2].startsWith(":")) split[2] = split[2].substring(1);
-			//String message = Format.join(split, " ", 3);
-			//String target = split[2];
-			//WriteConnectorSocket(":" + split[0] + " PRIVMSG " + target + " :" + message);
-			
+			if (split[0].startsWith(":")) split[0] = split[0].substring(1);
+
+			String message = Format.join(split, " ", 3);
+			String source = IRCUser.getNick(split[0]);
+			String target = split[2];
+			WriteWaffleSockets(":" + source + " PRIVMSG " + target + " :" + message);			
 		}
 		
 		if (command.startsWith("IDLE")) {
@@ -144,6 +159,15 @@ public class Syrup {
     	return true;
     }
     
+    public static void WriteWaffleSockets(String data) {
+    	int i = 0;
+    	if (WaffleClients.size() != 0) {
+    		while (i <  WaffleClients.size()) {
+    			WaffleClients.get(i).WriteSocket(data);
+    			i++;
+    		}
+		}     
+    }
     public static boolean SendBurst() {
     	WriteSocket(pre+"BURST "+(System.currentTimeMillis() / 1000L));
 		WriteSocket(pre+"VERSION : Syrup");
@@ -156,7 +180,7 @@ public class Syrup {
     
     public static void WriteSocket(String data) {
 		if (debugMode) {
-			System.out.println("<-" + data);
+			log.def("[OUT] " + data, "");
 		}
     	out.println(data);
 
