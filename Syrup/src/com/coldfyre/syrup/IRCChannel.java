@@ -8,11 +8,13 @@ public class IRCChannel {
 	private String ChannelName = "#dong";
 	private long ChannelTS = 0;
 	private String ChannelModes = "nt";
+	private String SID = "";
 	
-	public IRCChannel(String ChannelName, long ChannelTS, String ChannelModes) {
+	public IRCChannel(String ChannelName, long ChannelTS, String ChannelModes, String SID) {
 		this.ChannelName = ChannelName;
 		this.ChannelTS = ChannelTS;
 		this.ChannelModes = ChannelModes;
+		this.SID = SID;
 	}
 
 
@@ -37,6 +39,10 @@ public class IRCChannel {
 	public String getChannelModes() {
 		return ChannelModes;
 	}
+	
+	public String getSID() {
+		return SID;
+	}
 
 
 	public void setChannelModes(String channelModes) {
@@ -45,6 +51,16 @@ public class IRCChannel {
 	
 	public void addUser(String nick, String modes) {
 		Members.put(nick, modes);
+	}
+	
+	public void removeUserByUID(String nick) {
+		if (Members.get(nick) != null) Members.remove(nick);
+	}
+	
+	public void removeUserBySID(String nick) {
+		for (String key : Members.keySet()) {
+			if (key.startsWith(nick)) { Members.remove(key); }
+		}
 	}
 	
 	public int getUserCount() {

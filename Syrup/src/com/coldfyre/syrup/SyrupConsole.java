@@ -62,7 +62,7 @@ public class SyrupConsole implements Runnable {
 				
 				else if (userInputArgs[0].equalsIgnoreCase("CHANNELS")) {
 					if (Syrup.IRCChannels.size() != 0) {
-						String name,modes;
+						String name,modes,SID;
 						Syrup.log.def("I have " + Syrup.IRCChannels.size() + " Channels formed:", "LIGHT_CYAN");
 						Syrup.log.def("=======================================", "LIGHT_CYAN");
 						for (String key : Syrup.IRCChannels.keySet()) {
@@ -70,7 +70,8 @@ public class SyrupConsole implements Runnable {
 							channel = Syrup.IRCChannels.get(key);
 							name = channel.getChannelName();
 							modes = channel.getChannelModes();
-							System.out.println(name + "\t"  + modes + "\t " + channel.getUserCount());
+							SID = channel.getSID();
+							System.out.println(name + "\t"  + modes + "\t " + channel.getUserCount() + "\t" + SID);
 						}
 					}
 				}

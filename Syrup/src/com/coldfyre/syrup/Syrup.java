@@ -117,15 +117,20 @@ public class Syrup {
 		}
 		
 		if (command.equalsIgnoreCase("FJOIN")) {
+			String[] infoz;
+			infoz = split[5].split(",");
+
 			if (IRCChannels.get(split[2]) != null) {
-				IRCChannels.get(split[2]).addUser(split[5], "r");
+				IRCChannels.get(split[2]).addUser(infoz[1], "r");
 			}
 			else {
 				long TS = 0;//Long.getLong(split[3]);
-				IRCChannel channel = new IRCChannel(split[2], TS, split[4]);
+				IRCChannel channel = new IRCChannel(split[2], TS, split[4], split[0]);
 				IRCChannels.put(split[2], channel);
-				IRCChannels.get(split[2]).addUser(split[5], "r");
+				IRCChannels.get(split[2]).addUser(infoz[1], "r");
 			}
+			WriteWaffleSockets(pre + "FJOIN " + split[2] + " ," + IRCClient.get(infoz[1]).nick + " ");
+
 		}
 		
 		if (command.equalsIgnoreCase("UID")) {
@@ -135,8 +140,7 @@ public class Syrup {
 		
 		if (command.equalsIgnoreCase("PART")) {
 			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " PART " + split[2]);
-			//IRCChannels.get(split[2]).addUser(split[5], "r");
-
+			RemoveFromChannelsByUID(split[0]);
 		}
 		
 		if (command.equalsIgnoreCase("QUIT")) {
@@ -145,6 +149,7 @@ public class Syrup {
 			if (reason.startsWith(":")) reason = reason.substring(1);
 			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " QUIT " + reason);
 			UID.removeUID(split[0]);
+			RemoveFromChannelsByUID(split[0]);	
 		}
 		
 		if (command.startsWith("NICK")) {
@@ -176,6 +181,22 @@ public class Syrup {
 		}
     	
     	return true;
+    }
+    
+    public static void RemoveFromChannelsByUID(String UID) {
+    	for (String key : Syrup.IRCChannels.keySet()) {
+			IRCChannel channel;
+			channel = Syrup.IRCChannels.get(key);
+			channel.removeUserByUID(UID);
+		}
+    }
+    
+    public static void RemoveFromChannelsBySID(String SID) {
+    	for (String key : Syrup.IRCChannels.keySet()) {
+			IRCChannel channel;
+			channel = Syrup.IRCChannels.get(key);
+			channel.removeUserBySID(SID);
+		}
     }
     
     public static void WriteWaffleSockets(String data) {
