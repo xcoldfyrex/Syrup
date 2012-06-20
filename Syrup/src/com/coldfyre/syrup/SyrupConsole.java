@@ -24,7 +24,7 @@ public class SyrupConsole implements Runnable {
 				String[] userInputArgs = userInput.split(" ");
 				if (userInputArgs[0].equalsIgnoreCase("HELP")) {
 					Syrup.log.def("ColdFyre's Syrup IRCD", "LIGHT_CYAN");
-					Syrup.log.def("Commands: debug on|off, help, clients, whois <user>, chan <channel>, links, squit <server>, connect, stop", "LIGHT_CYAN");
+					Syrup.log.def("Commands: debug on|off, help, clients, whois <user>, chan <channel>, channels, links, squit <server>, connect, stop", "LIGHT_CYAN");
 				} 
 				
 				else if (userInputArgs[0].equalsIgnoreCase("DEBUG")) {
@@ -75,7 +75,11 @@ public class SyrupConsole implements Runnable {
 						}
 					}
 				}
-			
+				
+				else if (userInputArgs[0].equalsIgnoreCase("CHAN")) {
+					Syrup.log.def("Info for channel:", "LIGHT_CYAN");					
+				}
+				
 				else if (userInputArgs[0].equalsIgnoreCase("CLIENTS")) {
 					if (Syrup.WaffleIRCClients.size() != 0) {
 						String name,sid,host;

@@ -117,19 +117,31 @@ public class Syrup {
 		}
 		
 		if (command.equalsIgnoreCase("FJOIN")) {
-			String[] infoz;
-			infoz = split[5].split(",");
-
-			if (IRCChannels.get(split[2]) != null) {
-				IRCChannels.get(split[2]).addUser(infoz[1], "r");
+			String chanserv = split[0];
+			String channame = split[2];
+			long chanTS = 0; //Long.getLong(split[3]);
+			String chanmodes = split[4];
+			int i = 0;
+			while (i < 5) {
+				split[i] = "";
+				i++;
 			}
+					
+			String[] people;
+			String[] infoz = data.split(":");
+			people = infoz[infoz.length -1].split(",");
+			
+			//channel exists, just add people
+			if (IRCChannels.get(channame) != null) {
+				IRCChannels.get(channame).addUser(people[1], "r");
+			}
+			//is new chan
 			else {
-				long TS = 0;//Long.getLong(split[3]);
-				IRCChannel channel = new IRCChannel(split[2], TS, split[4], split[0]);
-				IRCChannels.put(split[2], channel);
-				IRCChannels.get(split[2]).addUser(infoz[1], "r");
+				IRCChannel channel = new IRCChannel(channame, chanTS, chanmodes, chanserv);
+				IRCChannels.put(channame, channel);
+				IRCChannels.get(channame).addUser(people[1], "r");
 			}
-			WriteWaffleSockets(pre + "FJOIN " + split[2] + " ," + IRCClient.get(infoz[1]).nick + " ");
+			WriteWaffleSockets(pre + "FJOIN " + channame + " ," + IRCClient.get(people[0]) + " ");
 
 		}
 		
