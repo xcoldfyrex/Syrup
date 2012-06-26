@@ -56,7 +56,7 @@ public class IRCUser {
 		int i = 0;
 		while (i < mode.length()) {
 			String modechar = mode.substring(i, i+1);
-			if (!modechar.contains("+") && !modechar.contains("-")) {
+			if (!modechar.contains("+") && !modechar.contains("-") && !(i == 0)) {
 				if (mode.substring(i-1, i).equals("+")) {
 					if (!this.serverMode.contains(modechar)) {
 						this.serverMode.add(modechar);

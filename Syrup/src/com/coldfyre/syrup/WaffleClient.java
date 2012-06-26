@@ -10,6 +10,8 @@ import java.net.SocketAddress;
 
 import com.coldfyre.syrup.WaffleIRCClient;
 import com.coldfyre.syrup.TS6.UID;
+import com.coldfyre.syrup.Util.Config;
+import com.coldfyre.syrup.Util.Log;
 
 public class WaffleClient implements Runnable {
 	protected String RemoteServerID;
@@ -140,16 +142,16 @@ public class WaffleClient implements Runnable {
 				this.BurstTS = Integer.parseInt(split[2]);
 				burstSent = true;
 				WriteServices("LINK: Finished bursting to "+RemoteServerName);
-				WriteSocket(Syrup.pre +"PING " + Syrup.SID + " "+ RemoteServerID);
-				WriteConnectorSocket(":"+Syrup.serverName + " SERVER " + RemoteServerName + " * 0 " + RemoteServerID + " " + RemoteServerVersion);
+				WriteSocket(Config.pre +"PING " + Config.SID + " "+ RemoteServerID);
+				WriteConnectorSocket(":"+Config.serverName + " SERVER " + RemoteServerName + " * 0 " + RemoteServerID + " " + RemoteServerVersion);
 				Syrup.WaffleClients.add(this);
 				//String UID = Syrup.uidgen.generateUID(RemoteServerID);
 				//WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + UID  + " " + RemoteServerName + " " + RemoteServerName + " Andy Dick " + "127.0.0.0 " + System.currentTimeMillis() / 1000L + " +r : Dot");
-		    	Syrup.log.info("Incoming link completed: " + RemoteServerName+ " "+this.RemoteServerAddress, "LIGHT_YELLOW");
+		    	Log.info("Incoming link completed: " + RemoteServerName+ " "+this.RemoteServerAddress, "LIGHT_YELLOW");
 				for (String key : Syrup.IRCClient.keySet()) {
 					IRCUser person;
 					person = Syrup.IRCClient.get(key);
-		    		WriteSocket(Syrup.pre + "UID " + person.nick + " " + person.ident + " " + person.hostmask + " ");
+		    		WriteSocket(Config.pre + "UID " + person.nick + " " + person.ident + " " + person.hostmask + " ");
 		    	
 		    	}
 				return true;
@@ -174,7 +176,7 @@ public class WaffleClient implements Runnable {
 				}
 				WriteConnectorSocket(":" + senderUID + " QUIT :" + reason);
 			}
-			Syrup.log.info("QUIT " + split[0] + " from " + RemoteServerID, "LIGHT_GREEN");
+			Log.info("QUIT " + split[0] + " from " + RemoteServerID, "LIGHT_GREEN");
 		}
 		
 		if (command.startsWith("FJOIN")){
@@ -204,7 +206,7 @@ public class WaffleClient implements Runnable {
 					WaffleIRCClient waffleircclient = new WaffleIRCClient(split[3],split[4],false,RemoteServerID,System.currentTimeMillis() / 1000L);
 					String UID = Syrup.uidgen.generateUID(RemoteServerID);
 					Syrup.WaffleIRCClients.put(UID, waffleircclient);
-					Syrup.log.info("JOIN " + UID + "->" + split[3]+ " from " + RemoteServerID, "LIGHT_GREEN");
+					Log.info("JOIN " + UID + "->" + split[3]+ " from " + RemoteServerID, "LIGHT_GREEN");
 					WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + "/mc " + split[3] + " " + split[5] + " " + split[3] + " " + "127.0.0.0 " + System.currentTimeMillis() / 1000L + " +r :Dot");
 				}
 			}
@@ -225,7 +227,7 @@ public class WaffleClient implements Runnable {
 	}
     
 	public void WriteServices(String data) {
-		WriteConnectorSocket(":" + Syrup.serverName+ " PRIVMSG #services :" + data);
+		WriteConnectorSocket(":" + Config.serverName+ " PRIVMSG #services :" + data);
 	}
 	
 	public void CloseSocket(String reason) {
@@ -242,9 +244,9 @@ public class WaffleClient implements Runnable {
 			if (waffleClient >= 0) {
 				Syrup.WaffleClients.remove(waffleClient);
 			}
-	    	Syrup.log.info("Lost client link: " + RemoteServerName+ " "+this.RemoteServerAddress + " " + reason + " (lost " + i + " clients)", "LIGHT_YELLOW" );
-			WriteSocket(Syrup.pre +reason);
-			WriteConnectorSocket(":" + Syrup.serverName+ " SQUIT " + RemoteServerName + " :" +reason);
+	    	Log.info("Lost client link: " + RemoteServerName+ " "+this.RemoteServerAddress + " " + reason + " (lost " + i + " clients)", "LIGHT_YELLOW" );
+			WriteSocket(Config.pre +reason);
+			WriteConnectorSocket(":" + Config.serverName+ " SQUIT " + RemoteServerName + " :" +reason);
 			WriteServices("LINK: Server "+RemoteServerName +" split: " +reason);
 
 			threadOK = false;

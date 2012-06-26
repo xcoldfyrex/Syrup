@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.SocketAddress;
 
+import com.coldfyre.syrup.Util.Log;
+
 public class SyrupConsole implements Runnable {
 
 	BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
@@ -128,7 +130,7 @@ public class SyrupConsole implements Runnable {
 				
 				else if (userInputArgs[0].equalsIgnoreCase("STOP")) 
 				{
-					Syrup.log.info("Shutting down..(caught shutdown from user)", "LIGHT_RED");
+					Log.info("Shutting down..(caught shutdown from user)", "LIGHT_RED");
 					Syrup.closeConnectorSocket();
 					System.exit(1);
 				}

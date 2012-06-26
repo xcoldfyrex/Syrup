@@ -8,6 +8,7 @@ import java.io.*;
 
 import com.coldfyre.syrup.UIDGen;
 import com.coldfyre.syrup.TS6.UID;
+import com.coldfyre.syrup.Util.Config;
 import com.coldfyre.syrup.Util.Log;
 
 public class Syrup {
@@ -15,17 +16,13 @@ public class Syrup {
 	public static PrintStream out;
     public static BufferedReader in = null;
     
-    public static String connectorHost = "dev.mojeda.net"; 
-	public static int connectorPort = 25402;
+
 	public static Socket connectorSocket = null;	
 	public static boolean running = true;
 	public static boolean connected = false;
 	public static boolean sentBurst = false;
 	public static boolean sentCapab = false;
 	public static boolean debugMode = true;
-	public static String SID = "1SY";
-	public static String pre = ":" + SID + " ";
-	public static String serverName = "syrup.paradoxirc.net";
 	
 	//classes
 	public static UID UID = new UID();
@@ -52,31 +49,36 @@ public class Syrup {
 
 	public static Log log = new Log();
     public static void main(String[] args) throws IOException {
-    	log.info("###################### Starting ColdFyre's Syrup IRCD ######################", "LIGHT_GREEN");
+    	
+
+    	Log.info("###################### Starting ColdFyre's Syrup IRCD ######################", "LIGHT_GREEN");
+		Log.info("Reading config..", "LIGHT_GREEN");
+		
     	syrupConsole = new SyrupConsole();
 		consoleThread = new Thread(syrupConsole);
 		consoleThread.start();
 		consoleThread.setName("Console Thread");
-		log.info("Started console thread", "LIGHT_GREEN");
+		Log.info("Started console thread", "LIGHT_GREEN");
 		
-		waffleListener = new WaffleListener(6667);
+		waffleListener = new WaffleListener(Config.localPort);
     	waffleListenerThread = new Thread(waffleListener);
     	waffleListenerThread.start();
     	waffleListenerThread.setName("Waffle Listener Thread");
-    	log.info("Started client listener thread", "LIGHT_GREEN");
+    	Log.info("Started client listener thread", "LIGHT_GREEN");
     	
-        if (openConnectorSocket()) {
-        	connected = true;
-        	out = new PrintStream(connectorSocket.getOutputStream(), true);
-        	in = new BufferedReader(new InputStreamReader(connectorSocket.getInputStream()));
-        }
-        
+    	if (Config.GetProperties()) {
+    		if (openConnectorSocket()) {
+        		connected = true;
+        		out = new PrintStream(connectorSocket.getOutputStream(), true);
+        		in = new BufferedReader(new InputStreamReader(connectorSocket.getInputStream()));
+        	}
+    	}
         while (running) {
         	while (connected && connectorSocket != null) {
         		String connectorStream = in.readLine();
         		
         		if (connectorStream == null) {
-        			log.warn("Lost link to " + connectorHost, "LIGHT_RED");
+        			log.warn("Lost link to " + Config.connectorHost, "LIGHT_RED");
         			closeConnectorSocket();
         		} else {
         			if (debugMode) {
@@ -89,13 +91,14 @@ public class Syrup {
         			SendBurst();
         		} 
         		if (!connectorSocket.isConnected()) {
-        	    	log.info("Connector socket lost connection" , "LIGHT_YELLOW");
+        	    	Log.info("Connector socket lost connection" , "LIGHT_YELLOW");
         		}
         	}
         }
         
-    	log.info("Exiting main loop, terminating." , "LIGHT_YELLOW");
+    	Log.info("Exiting main loop, terminating." , "LIGHT_YELLOW");
 	}
+    
     
     public static boolean ParseLinkCommand(String data) {
 		String[] split = data.split(" ");
@@ -108,12 +111,12 @@ public class Syrup {
 			command = split[1];
 		}
 		if (data.startsWith("ERROR")) {
-			log.error(data, "LIGHT_RED");
+			Log.error(data, "LIGHT_RED");
 			closeConnectorSocket();
 		}
 		//Got a PING
 		if (command.equalsIgnoreCase("PING")) {
-			WriteSocket(pre+"PONG 1SY "+ remoteSID);
+			WriteSocket(Config.pre+"PONG 1SY "+ remoteSID);
 		}
 		
 		if (command.equalsIgnoreCase("FMODE")) {
@@ -139,7 +142,7 @@ public class Syrup {
 		if (command.equalsIgnoreCase("FJOIN")) {
 			String chanserv = split[0];
 			String channame = split[2];
-			long chanTS = 0; //Long.getLong(split[3]);
+			long chanTS = Long.parseLong(split[3]);
 			String chanmodes = split[4];
 			int i = 0;
 			while (i < 5) {
@@ -150,24 +153,25 @@ public class Syrup {
 			String[] people;
 			String[] infoz = data.split(":");
 			people = infoz[infoz.length -1].split(",");
-			
-			//channel exists, just add people
-			if (IRCChannels.get(channame) != null) {
-				IRCChannels.get(channame).addUser(people[1], "r");
+			if (people.length > 1) {
+				//channel exists, just add people
+				if (IRCChannels.get(channame) != null) {
+					IRCChannels.get(channame).addUser(people[1], "r");
+				}
+				//is new chan
+				else {
+					IRCChannel channel = new IRCChannel(channame, chanTS, chanmodes, chanserv);
+					IRCChannels.put(channame, channel);
+					IRCChannels.get(channame).addUser(people[1], "r");
+				}
+			WriteWaffleSockets(Config.pre + "FJOIN " + channame + " ," + IRCClient.get(people[0]) + " ");
 			}
-			//is new chan
-			else {
-				IRCChannel channel = new IRCChannel(channame, chanTS, chanmodes, chanserv);
-				IRCChannels.put(channame, channel);
-				IRCChannels.get(channame).addUser(people[1], "r");
-			}
-			WriteWaffleSockets(pre + "FJOIN " + channame + " ," + IRCClient.get(people[0]) + " ");
 
 		}
 		
 		if (command.equalsIgnoreCase("UID")) {
 			UID.add(split);
-			WriteWaffleSockets(pre + "UID " + split[4] + " " + split[6] + " "+  split[7]);
+			WriteWaffleSockets(Config.pre + "UID " + split[4] + " " + split[6] + " "+  split[7]);
 		}
 		
 		if (command.equalsIgnoreCase("PART")) {
@@ -193,7 +197,7 @@ public class Syrup {
     		WriteSocket("CAPAB START 1201");
     		WriteSocket("CAPAB CAPABILITIES :NICKMAX=33 CHANMAX=50 IDENTMAX=33 MAXTOPIC=500 MAXQUIT=500 MAXKICK=500 MAXGECOS=500 MAXAWAY=999 MAXMODES=1 HALFOP=1 PROTOCOL=1201");
     		WriteSocket("CAPAB END");  
-    		WriteSocket("SERVER " + serverName + " mUPhegEy9f+fu*acre_= 0 " + SID +" :Syrup");
+    		WriteSocket("SERVER " + Config.serverName + " " + Config.linkPassword + " 0 "+ Config.SID +" :Syrup");
     		sentCapab = true;
     	}
     	
@@ -241,11 +245,11 @@ public class Syrup {
 		}     
     }
     public static boolean SendBurst() {
-    	WriteSocket(pre+"BURST "+(System.currentTimeMillis() / 1000L));
-		WriteSocket(pre+"VERSION : Syrup");
+    	WriteSocket(Config.pre+"BURST "+(System.currentTimeMillis() / 1000L));
+		WriteSocket(Config.pre+"VERSION : Syrup");
 		//out.println(pre+"UID 1SYAAAAAA "+(System.currentTimeMillis() / 1000L)+" syrup.paradoxirc.net syrup.paradoxirc.net syrup.paradoxirc.net syrup.paradoxirc.net 127.0.0.1 "+(System.currentTimeMillis() / 1000L)+" +Siosw +ACKNOQcdfgklnoqtx : PONY");
 		//out.println(":1SYAAAAAA OPERTYPE NetAdmin");
-		WriteSocket(pre+"ENDBURST");
+		WriteSocket(Config.pre+"ENDBURST");
 		sentBurst = true;
     	return true;
     }
@@ -260,36 +264,36 @@ public class Syrup {
     
     public static boolean openConnectorSocket() {
     	if (connected) {
-        	log.error("Somehow tried to open connector socket twice?" , "LIGHT_RED");
+        	Log.error("Somehow tried to open connector socket twice?" , "LIGHT_RED");
         	return true;
     	}
     	if (connectorSocket != null) {
     			try { connectorSocket.close(); } catch (IOException e) { }
     			connectorSocket = null;
     	}
-    	log.info("Connecting to server: "+connectorHost,"LIGHT_GREEN");
+    	Log.info("Connecting to server: "+Config.connectorHost,"LIGHT_GREEN");
     	sentBurst = false;
     	sentCapab = false;
         try {
-        	connectorSocket = new Socket(connectorHost, connectorPort);
+        	connectorSocket = new Socket(Config.connectorHost, Config.connectorPort);
         } catch (UnknownHostException e) {
-        	log.error("DNS Failure", "LIGHT_RED");
+        	Log.error("DNS Failure", "LIGHT_RED");
             return false;
         } catch (IOException e) {
-        	log.error("Can't connect to: " + connectorHost + " Reason:" +e, "LIGHT_RED");
+        	Log.error("Can't connect to: " + Config.connectorHost + " Reason:" +e, "LIGHT_RED");
             return false;
         }
         if (connectorSocket == null) {
-        	log.error("Failed connect to: " + connectorHost, "LIGHT_RED");
+        	Log.error("Failed connect to: " + Config.connectorHost, "LIGHT_RED");
         	return false;
         }
-        log.info("Connected to server: "+connectorHost, "LIGHT_GREEN");
+        Log.info("Connected to server: "+Config.connectorHost, "LIGHT_GREEN");
         connected = true;
     	return true;
     }
     
     public static boolean closeConnectorSocket() {
-    	log.info("Shutdown connector socket", "LIGHT_YELLOW");
+    	Log.info("Shutdown connector socket", "LIGHT_YELLOW");
     	connected = false;
     	sentBurst = false;
     	sentCapab = false;

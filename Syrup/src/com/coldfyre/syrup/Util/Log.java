@@ -10,7 +10,7 @@ public class Log {
 		 echo(colorConvert(color) + "[DEBUG] " + message);
 	}
 	 
-	 public void info(Object message, String color){
+	 public static void info(Object message, String color){
 		 echo(colorConvert(color) + "[INFO] " + message);
 	 }
 
@@ -19,7 +19,7 @@ public class Log {
 
 	 }
 
-	 public void error(Object message, String color){
+	 public static void error(Object message, String color){
 		 echo(colorConvert(color) + "[ERROR] " + message);
 	 }
 
@@ -27,7 +27,7 @@ public class Log {
 		 echo(colorConvert(color) + "[FATAL] " + message);
 	 }
 
-	 private void echo(String message) {
+	 private static void echo(String message) {
 		 java.util.Date time=new java.util.Date((long)System.currentTimeMillis());
 		 System.out.println("["+ time + "] "+ message + "\u001B[0m");
 	 }
