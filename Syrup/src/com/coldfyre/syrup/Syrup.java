@@ -67,9 +67,9 @@ public class Syrup {
     	
         if (openConnectorSocket()) {
         	connected = true;
+        	out = new PrintStream(connectorSocket.getOutputStream(), true);
+        	in = new BufferedReader(new InputStreamReader(connectorSocket.getInputStream()));
         }
-    	out = new PrintStream(connectorSocket.getOutputStream(), true);
-        in = new BufferedReader(new InputStreamReader(connectorSocket.getInputStream()));
         
         while (running) {
         	while (connected && connectorSocket != null) {
@@ -114,6 +114,26 @@ public class Syrup {
 		//Got a PING
 		if (command.equalsIgnoreCase("PING")) {
 			WriteSocket(pre+"PONG 1SY "+ remoteSID);
+		}
+		
+		if (command.equalsIgnoreCase("FMODE")) {
+			//String person = IRCClient.get(split[0]).nick;
+			if (split.length > 5 ){
+				
+			}
+		}
+		
+		if (command.equalsIgnoreCase("MODE")) {
+			String target,newmode;
+			//sender = split[0];
+			target = split[2];
+			if (split.length == 4) {
+				newmode = split[3];
+			} 
+			else {
+				newmode = split[3] + split [4];
+			}
+			IRCClient.get(target).setServerModes(newmode);
 		}
 		
 		if (command.equalsIgnoreCase("FJOIN")) {

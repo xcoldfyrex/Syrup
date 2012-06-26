@@ -12,7 +12,8 @@ public class UID {
 		if (UIDString[11].startsWith(":")) UIDString[11] = UIDString[11].substring(1);
 		String realname = Format.join(UIDString, " ", 11);
 		synchronized(Syrup.csIRCClient) {
-			IRCUser ircuser = new IRCUser(UIDString[1],UIDString[2],idleTime, UIDString[4],UIDString[5],UIDString[6],UIDString[7],UIDString[8],signedOn, UIDString[10], realname);
+			IRCUser ircuser = new IRCUser(UIDString[1],UIDString[2],idleTime, UIDString[4],UIDString[5],UIDString[6],UIDString[7],UIDString[8],signedOn, "", realname);
+			ircuser.setServerModes(UIDString[10]);
 		}
 		/* TODO
 		 *  send UID to clients

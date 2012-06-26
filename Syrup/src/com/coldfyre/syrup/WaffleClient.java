@@ -256,20 +256,24 @@ public class WaffleClient implements Runnable {
 		}
 	}
 	public void WriteConnectorSocket(String data) {
-		if (Syrup.debugMode) {
-			System.out.println(this.RemoteServerAddress +" <-" + data);
+		if (Syrup.connected) {
+			if (Syrup.debugMode) {
+				System.out.println(this.RemoteServerAddress +" <-" + data);
+			}
+    		Syrup.out.println(data);
+    		Syrup.out.flush();
 		}
-    	Syrup.out.println(data);
-    	Syrup.out.flush();
 
     }
 	
 	public void WriteSocket(String data) {
-		if (Syrup.debugMode) {
-			System.out.println(this.RemoteServerAddress +" <-" + data);
+		if (clientSocket.isConnected()) {
+			if (Syrup.debugMode) {
+				System.out.println(this.RemoteServerAddress +" <-" + data);
+			}
+    		out.println(data);
+			out.flush();
 		}
-    	out.println(data);
-		out.flush();
 
     } 
 	

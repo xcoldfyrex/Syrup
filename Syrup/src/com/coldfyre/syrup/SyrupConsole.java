@@ -101,7 +101,7 @@ public class SyrupConsole implements Runnable {
 						Syrup.log.def("I have " + Syrup.IRCClient.size() + " IRC client(s) connected:", "LIGHT_CYAN");
 						Syrup.log.def("=======================================","LIGHT_CYAN");
 						int i = 0;
-						String name,host,UID;
+						String name,host,UID, modes;
 						
 						for (String key : Syrup.IRCClient.keySet()) {
 							IRCUser person;
@@ -109,15 +109,16 @@ public class SyrupConsole implements Runnable {
 
 							name = person.nick;
 							host = person.realhost;
+							modes = person.getServerModes();
 							UID = person.UID;
 							if (name.length() <= 7) {
-								System.out.println(name + "\t\t\t" + "\t" + UID + "\t" + host);
+								System.out.println(name + "\t\t\t" + "\t" + UID + "\t" + host + "\t" + modes);
 							}
 							else if (name.length() <= 14)  {
-								System.out.println(name + "\t\t" + "\t" + UID + "\t" + host);
+								System.out.println(name + "\t\t" + "\t" + UID + "\t" + host + "\t" + modes);
 							}
 							else {
-								System.out.println(name + "\t" + "\t" + UID + "\t" + host);
+								System.out.println(name + "\t" + "\t" + UID + "\t" + host + "\t" + modes);
 							}
 							i++;
 						}

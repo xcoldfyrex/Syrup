@@ -1,7 +1,11 @@
 package com.coldfyre.syrup;
 
-public class IRCUser {
+import java.util.ArrayList;
+import java.util.List;
 
+public class IRCUser {
+	
+	public List<String> serverMode = new ArrayList<String>();
 	public IRCUser(String server, String UID, long signonTime, String nick, String realhost, String hostmask, String ident, String ipaddress, long lastActivity, String modes, String realname) {
 		this.UID = UID;
 		this.nick = nick;
@@ -46,6 +50,41 @@ public class IRCUser {
 	
 	public String getModes() {
 		return this.modes;
+	}
+	
+	public void setServerModes(String mode) {
+		int i = 0;
+		while (i < mode.length()) {
+			String modechar = mode.substring(i, i+1);
+			if (!modechar.contains("+") && !modechar.contains("-")) {
+				if (mode.substring(i-1, i).equals("+")) {
+					if (!this.serverMode.contains(modechar)) {
+						this.serverMode.add(modechar);
+					}
+				}
+				else if (mode.substring(i-1, i).equals("-") || (mode.startsWith("-") && (!mode.contains("+"))))  {
+					this.serverMode.remove(modechar);
+				}
+				else {
+					if (!this.serverMode.contains(modechar)) {
+						this.serverMode.add(modechar);
+					}
+				}
+				
+			}
+			i++;
+		}
+	}
+	
+	public String getServerModes() {
+		int i = 0;
+		String temp = "";
+		
+		while (i < this.serverMode.size()) {
+			temp = temp + this.serverMode.get(i);
+			i++;
+		}
+		return temp;
 	}
 	
 	public static String getNick(String UID){
