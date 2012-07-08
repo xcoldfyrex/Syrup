@@ -21,8 +21,9 @@ public class WaffleClient implements Runnable {
 	protected String RemoteServerHostname;
 	protected String RemoteServerName;
 	protected String RemoteServerVersion;
-	protected int BurstTS; 
-	protected int LastPong;
+	protected long BurstTS; 
+	public long LastPong = 0;
+	protected long connectTS;
 	
 	public boolean capabSent = false;
 	public boolean capabStarted = false;
@@ -40,9 +41,14 @@ public class WaffleClient implements Runnable {
     
 
     public WaffleClient(Socket clientSocket, String serverText) {
+    	this.connectTS = System.currentTimeMillis() / 1000L;
         this.clientSocket = clientSocket;
         this.serverText   = serverText;
 		this.RemoteServerAddress = clientSocket.getRemoteSocketAddress();
+		this.RemoteServerName = "UNKOWN SERVER: " + String.valueOf(this.RemoteServerAddress);
+		this.BurstTS = 0;
+		LastPong = System.currentTimeMillis() / 1000L;
+
     }
 
     public void run() {
@@ -52,18 +58,25 @@ public class WaffleClient implements Runnable {
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
             WriteSocket("CAPAB START 1202");
-            
+        	
             while(clientSocket.isConnected() && threadOK  == true) {
-                String clientCommand = in.readLine();
-                if (clientCommand == null) {
-                    CloseSocket("End of stream.");
-                }
-                else {
-                	ParseLinkCommand(clientCommand);
-                	if (Syrup.debugMode) {
+            	try {
+            		String clientCommand = in.readLine();
+            		if (clientCommand == null) {
+            			CloseSocket("End of stream.");
+            		}
+            		else {
+            			ParseLinkCommand(clientCommand);
+            			if (Syrup.debugMode) {
                 		System.out.println(this.RemoteServerAddress +" ->" + clientCommand);
-                	}
-                }
+            			}
+            		}
+            	}
+            	catch(IOException ioe) {
+            		System.out.println(ioe);
+            	}
+                
+                
             }
         }
         catch(Exception e)
@@ -76,7 +89,6 @@ public class WaffleClient implements Runnable {
             {                    
                 in.close();
                 out.close();
-                CloseSocket("Socket closed.");
             }
             catch(IOException ioe)
             {
@@ -145,7 +157,6 @@ public class WaffleClient implements Runnable {
 				WriteSocket(Config.pre +"PING " + Config.SID + " "+ RemoteServerID);
 				WriteConnectorSocket(":"+Config.serverName + " SERVER " + RemoteServerName + " * 0 " + RemoteServerID + " " + RemoteServerVersion);
 				Syrup.WaffleClients.add(this);
-				//String UID = Syrup.uidgen.generateUID(RemoteServerID);
 				//WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + UID  + " " + RemoteServerName + " " + RemoteServerName + " Andy Dick " + "127.0.0.0 " + System.currentTimeMillis() / 1000L + " +r : Dot");
 		    	Log.info("Incoming link completed: " + RemoteServerName+ " "+this.RemoteServerAddress, "LIGHT_YELLOW");
 				for (String key : Syrup.IRCClient.keySet()) {
@@ -154,6 +165,7 @@ public class WaffleClient implements Runnable {
 		    		WriteSocket(Config.pre + "UID " + person.nick + " " + person.ident + " " + person.hostmask + " ");
 		    	
 		    	}
+				
 				return true;
 				
 			}
@@ -201,7 +213,8 @@ public class WaffleClient implements Runnable {
 		}
 		
 		if (command.startsWith("UID")) {
-			if (split.length >= 11) {
+			Log.info("PRE JOIN ->" + split[3]+ " from " + RemoteServerID, "LIGHT_GREEN");
+			if (split.length >= 6) {
 				if ((UID.GetWaffleClientUID(split[3])) == null) {
 					WaffleIRCClient waffleircclient = new WaffleIRCClient(split[3],split[4],false,RemoteServerID,System.currentTimeMillis() / 1000L);
 					String UID = Syrup.uidgen.generateUID(RemoteServerID);
@@ -234,7 +247,10 @@ public class WaffleClient implements Runnable {
 		int i = 0;
 		if (Syrup.WaffleIRCClients.size() != 0) {
 			for (String key : Syrup.WaffleIRCClients.keySet()) {
-				if (key.startsWith(RemoteServerID)) Syrup.WaffleIRCClients.remove(key);
+				if (key.startsWith(RemoteServerID)) {
+					Syrup.WaffleIRCClients.remove(key);
+					i++;
+				}
 				i++;
 			}
 		} 

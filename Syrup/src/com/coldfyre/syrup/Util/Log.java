@@ -6,6 +6,10 @@ public class Log {
 		 echo(colorConvert(color) + message);
 	}
 	
+	public static void noTS(Object message, String color){
+		 System.out.println(colorConvert(color) + message + "\u001B[0m");
+	}
+	
 	public void debug(Object message, String color){
 		 echo(colorConvert(color) + "[DEBUG] " + message);
 	}

@@ -36,6 +36,10 @@ public class Syrup {
 	static SyrupConsole syrupConsole = null; 
 	private static Thread consoleThread = null;
 	
+	//pinger thread
+	static WafflePING wafflePING = null; 
+	private static Thread pingThread = null;
+	
 	//minecraft server listener thread
 	static WaffleListener waffleListener = null; 
 	private static Thread waffleListenerThread = null;
@@ -60,23 +64,29 @@ public class Syrup {
 		consoleThread.setName("Console Thread");
 		Log.info("Started console thread", "LIGHT_GREEN");
 		
-		waffleListener = new WaffleListener(Config.localPort);
-    	waffleListenerThread = new Thread(waffleListener);
-    	waffleListenerThread.start();
-    	waffleListenerThread.setName("Waffle Listener Thread");
-    	Log.info("Started client listener thread", "LIGHT_GREEN");
-    	
+    	wafflePING = new WafflePING();
+    	pingThread = new Thread(wafflePING);
+		pingThread.start();
+		pingThread.setName("PING Thread");
+		
     	if (Config.GetProperties()) {
     		if (openConnectorSocket()) {
         		connected = true;
         		out = new PrintStream(connectorSocket.getOutputStream(), true);
         		in = new BufferedReader(new InputStreamReader(connectorSocket.getInputStream()));
         	}
+    		waffleListener = new WaffleListener(Config.localPort);
+        	waffleListenerThread = new Thread(waffleListener);
+        	waffleListenerThread.start();
+        	waffleListenerThread.setName("Waffle Listener Thread");
+        	Log.info("Started client listener thread", "LIGHT_GREEN");
     	}
+    	
+    	
+    	
         while (running) {
         	while (connected && connectorSocket != null) {
         		String connectorStream = in.readLine();
-        		
         		if (connectorStream == null) {
         			log.warn("Lost link to " + Config.connectorHost, "LIGHT_RED");
         			closeConnectorSocket();
@@ -116,7 +126,13 @@ public class Syrup {
 		}
 		//Got a PING
 		if (command.equalsIgnoreCase("PING")) {
-			WriteSocket(Config.pre+"PONG 1SY "+ remoteSID);
+			String targetSID = split[3];
+			if (targetSID.equalsIgnoreCase(Config.SID)) {
+				WriteSocket(Config.pre+"PONG " + Config.SID + " " + remoteSID);
+			} else 
+			{
+				WriteSocket(Config.pre+"PONG " + targetSID + " " + remoteSID);
+			}
 		}
 		
 		if (command.equalsIgnoreCase("FMODE")) {
@@ -150,23 +166,22 @@ public class Syrup {
 				i++;
 			}
 					
-			String[] people;
-			String[] infoz = data.split(":");
-			people = infoz[infoz.length -1].split(",");
-			if (people.length > 1) {
+			String[] people = data.split(" ");
+			for (String user : people) {
+				if (!user.contains(",")) continue;
+				String infoz[] = user.split(",");
 				//channel exists, just add people
 				if (IRCChannels.get(channame) != null) {
-					IRCChannels.get(channame).addUser(people[1], "r");
+					IRCChannels.get(channame).addUser(infoz[1], infoz[0]);
 				}
 				//is new chan
 				else {
 					IRCChannel channel = new IRCChannel(channame, chanTS, chanmodes, chanserv);
 					IRCChannels.put(channame, channel);
-					IRCChannels.get(channame).addUser(people[1], "r");
+					IRCChannels.get(channame).addUser(infoz[1], infoz[0]);
 				}
-			WriteWaffleSockets(Config.pre + "FJOIN " + channame + " ," + IRCClient.get(people[0]) + " ");
+			WriteWaffleSockets(Config.pre + "FJOIN " + channame + " ," + IRCClient.get(infoz[1]).nick);
 			}
-
 		}
 		
 		if (command.equalsIgnoreCase("UID")) {

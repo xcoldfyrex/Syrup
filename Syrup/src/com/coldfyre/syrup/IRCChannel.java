@@ -4,11 +4,11 @@ import java.util.HashMap;
 
 public class IRCChannel {
 	
-	private HashMap<String, String> Members = new HashMap<String, String>();
-	private String ChannelName = "#dong";
-	private long ChannelTS = 0;
-	private String ChannelModes = "nt";
-	private String SID = "";
+	public HashMap<String, String> Members = new HashMap<String, String>();
+	private String ChannelName;
+	private long ChannelTS;
+	private String ChannelModes;
+	private String SID;
 	
 	public IRCChannel(String ChannelName, long ChannelTS, String ChannelModes, String SID) {
 		this.ChannelName = ChannelName;
@@ -17,6 +17,9 @@ public class IRCChannel {
 		this.SID = SID;
 	}
 
+	public String getChannelMemberInfo(String person) {
+		return Members.get(person);
+	}
 
 	public void setChannelName(String channelName) {
 		ChannelName = channelName;

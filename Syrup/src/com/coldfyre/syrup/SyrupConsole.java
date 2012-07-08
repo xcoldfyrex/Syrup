@@ -10,9 +10,7 @@ import com.coldfyre.syrup.Util.Log;
 public class SyrupConsole implements Runnable {
 
 	BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
-	
 	String userInput = null;
-
 
 	public void run() {
 		boolean a = true;
@@ -25,15 +23,18 @@ public class SyrupConsole implements Runnable {
 			if ( userInput != null) {
 				String[] userInputArgs = userInput.split(" ");
 				if (userInputArgs[0].equalsIgnoreCase("HELP")) {
-					Syrup.log.def("ColdFyre's Syrup IRCD", "LIGHT_CYAN");
-					Syrup.log.def("Commands: debug on|off, help, clients, whois <user>, chan <channel>, channels, links, squit <server>, connect, stop", "LIGHT_CYAN");
+					Log.noTS("ColdFyre's Syrup IRCD", "LIGHT_CYAN");
+					Log.noTS("Commands: debug on|off, help, clients, whois <user>, chan <channel>, channels, links, squit <server>, connect, stop", "LIGHT_CYAN");
 				} 
 				
 				else if (userInputArgs[0].equalsIgnoreCase("DEBUG")) {
+					if (userInputArgs.length == 1) continue;
 					if (userInputArgs[1].equalsIgnoreCase("ON")) {
 						Syrup.debugMode = true;
+						Log.noTS("Debug ON", "LIGHT_CYAN");
 					}
 					else {
+						Log.noTS("Debug OFF", "LIGHT_CYAN");
 						Syrup.debugMode = false;
 					}
 				}
@@ -49,44 +50,67 @@ public class SyrupConsole implements Runnable {
 
 				} 
 				else if (userInputArgs[0].equalsIgnoreCase("LINKS")) {
-					int i = 0;
-					String sname,sver;
-					SocketAddress saddy;
-					
-					while (i < Syrup.WaffleClients.size()) {
-						sname = Syrup.WaffleClients.get(i).RemoteServerName;
-						saddy = Syrup.WaffleClients.get(i).RemoteServerAddress;
-						sver = Syrup.WaffleClients.get(i).RemoteServerVersion;
-						System.out.println(sname + "\t" + saddy + "\t" + sver);
-						i++;
+					if (Syrup.WaffleClients.size() == 0) {
+						Log.noTS("No Waffle links connected!", "LIGHT_CYAN");
+						Log.noTS("=======================================", "LIGHT_CYAN");
+					} 
+					else {
+						int i = 0;
+						String sname,sver;
+						SocketAddress saddy;
+						Log.noTS(Syrup.WaffleClients.size() + " Waffle links connected", "LIGHT_CYAN");
+						Log.noTS("=======================================", "LIGHT_CYAN");
+
+						while (i < Syrup.WaffleClients.size()) {
+							sname = Syrup.WaffleClients.get(i).RemoteServerName;
+							saddy = Syrup.WaffleClients.get(i).RemoteServerAddress;
+							sver = Syrup.WaffleClients.get(i).RemoteServerVersion;
+							System.out.println(sname + "\t" + saddy + "\t" + sver + "\t" + (System.currentTimeMillis() / 1000L - Syrup.WaffleClients.get(i).LastPong));
+							i++;
+						}
 					}
 				}
 				
 				else if (userInputArgs[0].equalsIgnoreCase("CHANNELS")) {
 					if (Syrup.IRCChannels.size() != 0) {
 						String name,modes,SID;
-						Syrup.log.def("I have " + Syrup.IRCChannels.size() + " Channels formed:", "LIGHT_CYAN");
-						Syrup.log.def("=======================================", "LIGHT_CYAN");
+						Log.noTS("I have " + Syrup.IRCChannels.size() + " Channels formed:", "LIGHT_CYAN");
+						Log.noTS("=======================================", "LIGHT_CYAN");
 						for (String key : Syrup.IRCChannels.keySet()) {
 							IRCChannel channel;
 							channel = Syrup.IRCChannels.get(key);
-							name = channel.getChannelName();
-							modes = channel.getChannelModes();
-							SID = channel.getSID();
-							System.out.println(name + "\t"  + modes + "\t " + channel.getUserCount() + "\t" + SID);
+							if (channel != null) {
+								name = channel.getChannelName();
+								modes = channel.getChannelModes();
+								SID = channel.getSID();
+								System.out.println(name + "\t"  + modes + "\t " + channel.getUserCount() + "\t" + SID);
+							}
 						}
 					}
 				}
 				
 				else if (userInputArgs[0].equalsIgnoreCase("CHAN")) {
-					Syrup.log.def("Info for channel:", "LIGHT_CYAN");					
+					if (userInputArgs.length == 2) {
+						Log.noTS("Info for channel:", "LIGHT_CYAN");
+						Log.noTS("=======================================", "LIGHT_CYAN");
+						IRCChannel channel;
+						channel = Syrup.IRCChannels.get(userInputArgs[1]);
+						System.out.println("TS: " + channel.getChannelTS()  + " Modes: " + channel.getChannelModes() + "\tUSers: "  + channel.getUserCount());	
+						Log.noTS("=======================================", "LIGHT_CYAN");
+						for (String chanmember : channel.Members.keySet()) {
+							IRCUser person;
+							person = Syrup.IRCClient.get(chanmember);
+							System.out.println(person.nick + "\t" );
+							
+						}
+					}
 				}
 				
 				else if (userInputArgs[0].equalsIgnoreCase("CLIENTS")) {
 					if (Syrup.WaffleIRCClients.size() != 0) {
 						String name,sid,host;
-						Syrup.log.def("I have " + Syrup.WaffleIRCClients.size() + " WaffleIRC client(s) connected:", "LIGHT_CYAN");
-						Syrup.log.def("=======================================", "LIGHT_CYAN");
+						Log.noTS("I have " + Syrup.WaffleIRCClients.size() + " WaffleIRC client(s) connected:", "LIGHT_CYAN");
+						Log.noTS("=======================================", "LIGHT_CYAN");
 						for (String key : Syrup.WaffleIRCClients.keySet()) {
 							WaffleIRCClient person;
 							person = Syrup.WaffleIRCClients.get(key);
@@ -97,11 +121,12 @@ public class SyrupConsole implements Runnable {
 						}
 					} 
 					else {
-						System.out.println("No WaffleIRC clients connected!");
+						Log.noTS("No WaffleIRC clients connected!", "LIGHT_CYAN");
+						Log.noTS("=======================================", "LIGHT_CYAN");
 					}
 					synchronized(Syrup.csIRCClient) {
-						Syrup.log.def("I have " + Syrup.IRCClient.size() + " IRC client(s) connected:", "LIGHT_CYAN");
-						Syrup.log.def("=======================================","LIGHT_CYAN");
+						Log.noTS("I have " + Syrup.IRCClient.size() + " IRC client(s) connected:", "LIGHT_CYAN");
+						Log.noTS("=======================================","LIGHT_CYAN");
 						int i = 0;
 						String name,host,UID, modes;
 						
@@ -136,7 +161,7 @@ public class SyrupConsole implements Runnable {
 				}
 				else 
 				{	
-					Syrup.log.def("Unkown command, see /help", "LIGHT_CYAN");
+					Log.noTS("Unkown command, see /help", "LIGHT_CYAN");
 
 				}
 			}
