@@ -135,9 +135,33 @@ public class Syrup {
 		}
 		
 		if (command.equalsIgnoreCase("FMODE")) {
-			//String person = IRCClient.get(split[0]).nick;
+			String mode;
+			String modetarget = null;
+			String finaltarget = "";
+			mode = split[4];
+			String source = split[0];
+			//source
+			if (IRCUser.getNick(source) != null) {
+				source = IRCUser.getNick(source);
+			}
+			if (split.length > 6) {
+				for (int i = 5; split.length>i; i++ ) {
+					if (IRCClient.get(split[i]) != null) {
+						
+						modetarget = IRCClient.get(split[i]).nick;					
+					} 
+					else if (WaffleIRCClients.get(split[i]) != null) {
+						modetarget = WaffleIRCClients.get(split[i]).nick + "/mc";
+					}
+					else {
+						modetarget = split[i];
+					}
+					finaltarget = finaltarget + modetarget + " ";
+				}
+			}
+			
 			if (split.length > 5 ){
-				
+				WriteWaffleSockets(Config.pre + "FMODE " + split[2] + " " + source + " " + mode + " " + finaltarget);	
 			}
 		}
 		
