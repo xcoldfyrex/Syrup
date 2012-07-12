@@ -55,18 +55,36 @@ public class SyrupConsole implements Runnable {
 						Log.noTS("=======================================", "LIGHT_CYAN");
 					} 
 					else {
-						int i = 0;
 						String sname,sver;
 						SocketAddress saddy;
-						Log.noTS(Syrup.WaffleClients.size() + " Waffle links connected", "LIGHT_CYAN");
+						Log.noTS(Syrup.WaffleClients.size() + "Waffle links connected", "LIGHT_CYAN");
 						Log.noTS("=======================================", "LIGHT_CYAN");
 
-						while (i < Syrup.WaffleClients.size()) {
-							sname = Syrup.WaffleClients.get(i).RemoteServerName;
-							saddy = Syrup.WaffleClients.get(i).RemoteServerAddress;
-							sver = Syrup.WaffleClients.get(i).RemoteServerVersion;
-							System.out.println(sname + "\t" + saddy + "\t" + sver + "\t" + (System.currentTimeMillis() / 1000L - Syrup.WaffleClients.get(i).LastPong));
-							i++;
+						for (String key : Syrup.WaffleClients.keySet()) {
+							WaffleClient link;
+							link = Syrup.WaffleClients.get(key);
+							if (link != null) {
+								sname = link.RemoteServerName;
+								saddy = link.RemoteServerAddress;
+								sver = link.RemoteServerVersion;
+								System.out.println(sname + "\t" + saddy + "\t" + sver + "\t" + (System.currentTimeMillis() / 1000L - link.LastPong));
+							}
+						}	
+					}
+					if (Syrup.IRCServers.size() != 0) {
+						String sname,sver,parent;
+						Log.noTS(Syrup.IRCServers.size() + " IRC server links", "LIGHT_CYAN");
+						Log.noTS("=======================================", "LIGHT_CYAN");
+
+						for (String key : Syrup.IRCServers.keySet()) {
+							IRCServer link;
+							link = Syrup.IRCServers.get(key);
+							if (link != null) {
+								sname = link.servername;
+								parent = link.parent;
+								sver = link.version;
+								System.out.println(sname + "\t" + parent + "\t" + sver);
+							}
 						}
 					}
 				}

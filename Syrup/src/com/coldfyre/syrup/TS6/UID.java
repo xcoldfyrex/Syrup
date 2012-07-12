@@ -29,6 +29,9 @@ public class UID {
 		Syrup.IRCClient.remove(UID);
 	}
 	
+	public void purgeUIDByServer(String SID){
+		
+	}
 	public static String GetWaffleClientUID(String nickname) {
 		for (String key : Syrup.WaffleIRCClients.keySet()) {
 			WaffleIRCClient person;

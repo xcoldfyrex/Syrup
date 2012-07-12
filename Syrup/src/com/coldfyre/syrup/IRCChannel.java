@@ -2,6 +2,7 @@ package com.coldfyre.syrup;
 
 import java.util.HashMap;
 
+
 public class IRCChannel {
 	
 	public HashMap<String, String> Members = new HashMap<String, String>();
@@ -16,7 +17,29 @@ public class IRCChannel {
 		this.ChannelModes = ChannelModes;
 		this.SID = SID;
 	}
-
+	
+	public String getMemberListByUID() {
+		String memberlist = "";
+		for (String key : Members.keySet()) {
+			memberlist = memberlist + " ," + key ;
+		}
+		return memberlist;
+	}
+	
+	public String getMemberListByNick() {
+		String memberlist = "";
+		for (String key : Members.keySet()) {
+			for (String keytoo : Syrup.IRCClient.keySet()) {
+				if (key.equals(keytoo)) {
+					IRCUser person;
+					person = Syrup.IRCClient.get(key);
+					memberlist = memberlist + " ," + person.nick;
+				}
+	    	}
+		}
+		return memberlist;
+	}
+	
 	public String getChannelMemberInfo(String person) {
 		return Members.get(person);
 	}

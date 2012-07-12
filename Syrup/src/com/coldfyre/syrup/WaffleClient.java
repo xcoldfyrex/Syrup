@@ -24,6 +24,7 @@ public class WaffleClient implements Runnable {
 	protected long BurstTS; 
 	public long LastPong = 0;
 	protected long connectTS;
+	protected boolean badLink = false;
 	
 	public boolean capabSent = false;
 	public boolean capabStarted = false;
@@ -45,13 +46,14 @@ public class WaffleClient implements Runnable {
         this.clientSocket = clientSocket;
         this.serverText   = serverText;
 		this.RemoteServerAddress = clientSocket.getRemoteSocketAddress();
-		this.RemoteServerName = "UNKOWN SERVER: " + String.valueOf(this.RemoteServerAddress);
+		this.RemoteServerName = "UNKNOWN SERVER: " + String.valueOf(this.RemoteServerAddress);
 		this.BurstTS = 0;
 		LastPong = System.currentTimeMillis() / 1000L;
 
     }
 
     public void run() {
+    	if (!clientSocket.isConnected()) CloseSocket("Lost peer");
         BufferedReader in = null;  
         try
         {                                
@@ -68,7 +70,7 @@ public class WaffleClient implements Runnable {
             		else {
             			ParseLinkCommand(clientCommand);
             			if (Syrup.debugMode) {
-                		System.out.println(this.RemoteServerAddress +" ->" + clientCommand);
+            				Log.info(this.RemoteServerAddress +" [IN] " + clientCommand, "");
             			}
             		}
             	}
@@ -98,6 +100,7 @@ public class WaffleClient implements Runnable {
     }
 	
 	public boolean ParseLinkCommand(String data) {
+		if (badLink) return false;
 		String[] split = data.split(" ");
 		String command = "";
 		split = data.split(" ");
@@ -108,6 +111,8 @@ public class WaffleClient implements Runnable {
 		
 		if (data.startsWith("ERROR")){
 			System.out.println("\u001B[1;31m[ERROR]"+ data +" \u001B[0m");
+			badLink = true;
+			return false;
 
 		}
 		if (command.startsWith("CAPAB START")) {
@@ -121,6 +126,11 @@ public class WaffleClient implements Runnable {
 			return true;
 		}
 		
+		if (command.startsWith("SQUIT")) {
+			badLink = true;
+			CloseSocket("Requested by peer");
+		}
+		
 		if (split[0].startsWith("SERVER")) {
 			if (split.length < 6) {
 				// bad SERVER, add handler
@@ -132,12 +142,10 @@ public class WaffleClient implements Runnable {
 			RemoteServerID = SID.generateSID();
 			this.RemoteServerVersion = Format.join(split, " ", 5);
 			
-			int waffleClient = Syrup.getWaffleClientServerName(RemoteServerName);
-			System.out.println("ID " + waffleClient);
-			if (waffleClient >= 0) {
-
+			if (Syrup.WaffleClients.containsKey(RemoteServerName)) {
 				WriteServices("LINK: Connection to "+RemoteServerName +" failed with error: Server "+RemoteServerName+" already exists!");
 				CloseSocket("ERROR: "+ RemoteServerName +" already exists!");
+				badLink = true;
 				return false;
 			}
 			else {
@@ -145,7 +153,6 @@ public class WaffleClient implements Runnable {
 				SendBurst();
 				return true;
 			}
-
 		}	
 		
 
@@ -153,10 +160,9 @@ public class WaffleClient implements Runnable {
 			if (split.length == 3) {
 				this.BurstTS = Integer.parseInt(split[2]);
 				burstSent = true;
-				WriteServices("LINK: Finished bursting to "+RemoteServerName);
 				WriteSocket(Config.pre +"PING " + Config.SID + " "+ RemoteServerID);
 				WriteConnectorSocket(":"+Config.serverName + " SERVER " + RemoteServerName + " * 0 " + RemoteServerID + " " + RemoteServerVersion);
-				Syrup.WaffleClients.add(this);
+				Syrup.WaffleClients.put(RemoteServerName, this);
 				//WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + UID  + " " + RemoteServerName + " " + RemoteServerName + " Andy Dick " + "127.0.0.0 " + System.currentTimeMillis() / 1000L + " +r : Dot");
 		    	Log.info("Incoming link completed: " + RemoteServerName+ " "+this.RemoteServerAddress, "LIGHT_YELLOW");
 				for (String key : Syrup.IRCClient.keySet()) {
@@ -165,7 +171,16 @@ public class WaffleClient implements Runnable {
 		    		WriteSocket(Config.pre + "UID " + person.nick + " " + person.ident + " " + person.hostmask + " ");
 		    	
 		    	}
-				
+				String channame;	
+				for (String key : Syrup.IRCChannels.keySet()) {
+					IRCChannel channel;
+					channel = Syrup.IRCChannels.get(key);
+					if (channel != null) {
+						channame = channel.getChannelName();
+						WriteSocket(Config.pre + "FJOIN " + channame + channel.getMemberListByNick());
+					}
+				}
+				WriteServices("LINK: Finished bursting to "+RemoteServerName);				
 				return true;
 				
 			}
@@ -201,11 +216,14 @@ public class WaffleClient implements Runnable {
 					senderUID = UID.GetWaffleClientUID(joinedUsersNick[1]);
 					SID = UID.GetWaffleClientSID(joinedUsersNick[1]);
 					tempnick = UID.GetWaffleClientNick(joinedUsersNick[1]);
-					if (tempnick.equalsIgnoreCase(joinedUsersNick[1]) && SID.equalsIgnoreCase(RemoteServerID)) { 
-						WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + channel + " " + System.currentTimeMillis() / 1000L + " +nt :," + senderUID);
+					if (tempnick != null) {
+						if (tempnick.equalsIgnoreCase(joinedUsersNick[1]) && SID.equalsIgnoreCase(RemoteServerID)) { 
+							WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + channel + " " + System.currentTimeMillis() / 1000L + " +nt :," + senderUID);
+						}
 					}
 				}
 				else {
+					badLink = true;
 					CloseSocket("PROTCOL ERROR: MALFORMED FJOIN");
 				}
 				
@@ -213,14 +231,13 @@ public class WaffleClient implements Runnable {
 		}
 		
 		if (command.startsWith("UID")) {
-			Log.info("PRE JOIN ->" + split[3]+ " from " + RemoteServerID, "LIGHT_GREEN");
 			if (split.length >= 6) {
 				if ((UID.GetWaffleClientUID(split[3])) == null) {
 					WaffleIRCClient waffleircclient = new WaffleIRCClient(split[3],split[4],false,RemoteServerID,System.currentTimeMillis() / 1000L);
 					String UID = Syrup.uidgen.generateUID(RemoteServerID);
 					Syrup.WaffleIRCClients.put(UID, waffleircclient);
 					Log.info("JOIN " + UID + "->" + split[3]+ " from " + RemoteServerID, "LIGHT_GREEN");
-					WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + "/mc " + split[3] + " " + split[5] + " " + split[3] + " " + "127.0.0.0 " + System.currentTimeMillis() / 1000L + " +r :Dot");
+					WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + "/mc " + split[4] + " " + split[4] + " " + split[3] + " " + "127.0.0.0 " + System.currentTimeMillis() / 1000L + " +r :Dot");
 				}
 			}
 		}
@@ -244,22 +261,30 @@ public class WaffleClient implements Runnable {
 	}
 	
 	public void CloseSocket(String reason) {
+    	Log.info("Start socket shutdown: " + this.RemoteServerAddress, "LIGHT_YELLOW" );
 		int i = 0;
-		if (Syrup.WaffleIRCClients.size() != 0) {
-			for (String key : Syrup.WaffleIRCClients.keySet()) {
-				if (key.startsWith(RemoteServerID)) {
-					Syrup.WaffleIRCClients.remove(key);
-					i++;
+		if (Syrup.WaffleIRCClients.size() == 1) {
+			Syrup.WaffleIRCClients.clear();
+		}
+		else if (Syrup.WaffleIRCClients.size() != 0) {
+			while (i <= Syrup.WaffleIRCClients.size()) {
+				for (String key : Syrup.WaffleIRCClients.keySet()) {
+					if (key.startsWith(RemoteServerID)) {
+						//WriteConnectorSocket(":" + key + " QUIT :Lost peer");
+						Syrup.WaffleIRCClients.remove(key);
+						i++;
+						break;
+					}
+					else {
+						i++;
+					}
 				}
-				i++;
 			}
+			
 		} 
 		
 		if (clientSocket.isConnected()) {
-			int waffleClient = Syrup.getWaffleClientServerName(RemoteServerName);
-			if (waffleClient >= 0) {
-				Syrup.WaffleClients.remove(waffleClient);
-			}
+			Syrup.WaffleClients.remove(RemoteServerName);
 	    	Log.info("Lost client link: " + RemoteServerName+ " "+this.RemoteServerAddress + " " + reason + " (lost " + i + " clients)", "LIGHT_YELLOW" );
 			WriteSocket(Config.pre +reason);
 			WriteConnectorSocket(":" + Config.serverName+ " SQUIT " + RemoteServerName + " :" +reason);
@@ -276,7 +301,7 @@ public class WaffleClient implements Runnable {
 	public void WriteConnectorSocket(String data) {
 		if (Syrup.connected) {
 			if (Syrup.debugMode) {
-				System.out.println(this.RemoteServerAddress +" <-" + data);
+				Log.info(this.RemoteServerAddress +" [OUT(IRC)] " + data,"");
 			}
     		Syrup.out.println(data);
     		Syrup.out.flush();
@@ -287,7 +312,7 @@ public class WaffleClient implements Runnable {
 	public void WriteSocket(String data) {
 		if (clientSocket.isConnected()) {
 			if (Syrup.debugMode) {
-				System.out.println(this.RemoteServerAddress +" <-" + data);
+				Log.info(this.RemoteServerAddress +" [OUT(CLIENT)] " + data,"");
 			}
     		out.println(data);
 			out.flush();
@@ -296,6 +321,7 @@ public class WaffleClient implements Runnable {
     } 
 	
 	public boolean SendBurst() {
+		
 		WriteSocket(":1SY ENDBURST");
 		return true;
 	}

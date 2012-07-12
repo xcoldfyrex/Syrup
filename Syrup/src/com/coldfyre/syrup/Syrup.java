@@ -2,8 +2,6 @@ package com.coldfyre.syrup;
 
 import java.net.*;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.io.*;
 
 import com.coldfyre.syrup.UIDGen;
@@ -45,9 +43,10 @@ public class Syrup {
 	private static Thread waffleListenerThread = null;
 	
 	public static HashMap<String, IRCUser> IRCClient = new HashMap<String, IRCUser>();
-	public static List<WaffleClient> WaffleClients = new LinkedList<WaffleClient>();
+	public static HashMap<String, WaffleClient> WaffleClients = new HashMap<String, WaffleClient>();
 	public static HashMap<String, WaffleIRCClient> WaffleIRCClients = new HashMap<String, WaffleIRCClient>();
 	public static HashMap<String, IRCChannel> IRCChannels = new HashMap<String, IRCChannel>();
+	public static HashMap<String, IRCServer> IRCServers = new HashMap<String, IRCServer>();
 	
 	public static UIDGen uidgen = new UIDGen();
 
@@ -140,6 +139,21 @@ public class Syrup {
 			if (split.length > 5 ){
 				
 			}
+		}
+		
+		if (command.equalsIgnoreCase("SERVER")) {
+			IRCServer server;
+			server = new IRCServer(split[2],split[0],"", split[5]);
+			IRCServers.put(split[2], server);
+	    	Log.info("Introduced server "+ split[2] , "LIGHT_YELLOW");
+		}
+		
+		if (command.equalsIgnoreCase("SQUIT")) {
+	    	Log.info("Lost server "+ split[2] + "from " + split[0] , "LIGHT_YELLOW");
+	    	String SID = IRCServers.get(split[2]).SID;
+	    	IRCServers.remove(split[2]);
+	    	UID.purgeUIDByServer(SID);
+
 		}
 		
 		if (command.equalsIgnoreCase("MODE")) {
@@ -251,13 +265,13 @@ public class Syrup {
     }
     
     public static void WriteWaffleSockets(String data) {
-    	int i = 0;
-    	if (WaffleClients.size() != 0) {
-    		while (i <  WaffleClients.size()) {
-    			WaffleClients.get(i).WriteSocket(data);
-    			i++;
-    		}
-		}     
+    	for (String key : Syrup.WaffleClients.keySet()) {
+			WaffleClient link;
+			link = Syrup.WaffleClients.get(key);
+			if (link != null) {
+    			WaffleClients.get(key).WriteSocket(data);
+			}
+		}	
     }
     public static boolean SendBurst() {
     	WriteSocket(Config.pre+"BURST "+(System.currentTimeMillis() / 1000L));
