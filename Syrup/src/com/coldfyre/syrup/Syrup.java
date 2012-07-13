@@ -4,6 +4,7 @@ import java.net.*;
 import java.util.HashMap;
 import java.io.*;
 
+
 import com.coldfyre.syrup.UIDGen;
 import com.coldfyre.syrup.TS6.UID;
 import com.coldfyre.syrup.Util.Config;
@@ -131,6 +132,23 @@ public class Syrup {
 			} else 
 			{
 				WriteSocket(Config.pre+"PONG " + targetSID + " " + remoteSID);
+			}
+		}
+		//KILL
+		if (command.equalsIgnoreCase("KILL")) {
+			String victom;
+			victom = split[2];
+			//was a waffle client
+			if (WaffleIRCClients.containsKey(victom)) {
+				WriteSocket(":"+split[2].substring(0,3) + " UID " + split[2] + " " + (System.currentTimeMillis() / 1000L) + " " + WaffleIRCClients.get(victom).nick + "/mc " + WaffleIRCClients.get(victom).host + " " + WaffleIRCClients.get(victom).hostmask + " " + WaffleIRCClients.get(victom).nick + " 127.0.0.1 " + System.currentTimeMillis() / 1000L + " +r :Minecraft Player");
+				WriteSocket(":"+split[2].substring(0,3) + " FJOIN #minecraft "+ System.currentTimeMillis() / 1000L + " +nt :,"+ split[2]);
+			} else {
+				String reason;
+				reason = Format.join(split, " ", 2);
+				if (reason.startsWith(":")) reason = reason.substring(1);
+				WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " QUIT Killed: " + reason);
+				UID.removeUID(split[0]);
+				RemoveFromChannelsByUID(split[0]);	
 			}
 		}
 		

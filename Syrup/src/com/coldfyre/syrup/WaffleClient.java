@@ -237,7 +237,7 @@ public class WaffleClient implements Runnable {
 					String UID = Syrup.uidgen.generateUID(RemoteServerID);
 					Syrup.WaffleIRCClients.put(UID, waffleircclient);
 					Log.info("JOIN " + UID + "->" + split[3]+ " from " + RemoteServerID, "LIGHT_GREEN");
-					WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + "/mc " + split[4] + " " + split[4] + " " + split[3] + " " + "127.0.0.0 " + System.currentTimeMillis() / 1000L + " +r :Dot");
+					WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + "/mc " + split[4] + " " + waffleircclient.hostmask + " " + split[3] + " " + "127.0.0.0 " + System.currentTimeMillis() / 1000L + " +r :Dot");
 				}
 			}
 		}
