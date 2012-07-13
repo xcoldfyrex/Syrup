@@ -4,7 +4,6 @@ import java.net.*;
 import java.util.HashMap;
 import java.io.*;
 
-
 import com.coldfyre.syrup.UIDGen;
 import com.coldfyre.syrup.TS6.UID;
 import com.coldfyre.syrup.Util.Config;
@@ -177,9 +176,20 @@ public class Syrup {
 					finaltarget = finaltarget + modetarget + " ";
 				}
 			}
-			
-			if (split.length > 5 ){
+			else if (split.length > 5 ){
 				WriteWaffleSockets(Config.pre + "FMODE " + split[2] + " " + source + " " + mode + " " + finaltarget);	
+			}
+			else {
+				String target = split[2];
+				String newmode = "";
+				if (split.length == 5) {
+					newmode = split[4];
+				} 
+				else {
+					newmode = split[5] + split[6];
+				}
+				IRCChannels.get(target).setChannelModes(newmode);
+				WriteWaffleSockets(Config.pre + "FMODE " + split[2] + " set mode: " + mode );
 			}
 		}
 		
@@ -202,11 +212,11 @@ public class Syrup {
 			String target,newmode;
 			//sender = split[0];
 			target = split[2];
-			if (split.length == 4) {
-				newmode = split[3];
+			if (split.length == 5) {
+				newmode = split[4];
 			} 
 			else {
-				newmode = split[3] + split [4];
+				newmode = split[4] + split [5];
 			}
 			IRCClient.get(target).setServerModes(newmode);
 		}
@@ -232,8 +242,9 @@ public class Syrup {
 				}
 				//is new chan
 				else {
-					IRCChannel channel = new IRCChannel(channame, chanTS, chanmodes, chanserv);
+					IRCChannel channel = new IRCChannel(channame, chanTS, chanserv);
 					IRCChannels.put(channame, channel);
+					IRCChannels.get(channame).setChannelModes(chanmodes);
 					IRCChannels.get(channame).addUser(infoz[1], infoz[0]);
 				}
 			WriteWaffleSockets(Config.pre + "FJOIN " + channame + " ," + IRCClient.get(infoz[1]).nick);

@@ -1,20 +1,22 @@
 package com.coldfyre.syrup;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 
 public class IRCChannel {
 	
 	public HashMap<String, String> Members = new HashMap<String, String>();
+	public List<String> channelMode = new ArrayList<String>();
+
 	private String ChannelName;
 	private long ChannelTS;
-	private String ChannelModes;
 	private String SID;
 	
-	public IRCChannel(String ChannelName, long ChannelTS, String ChannelModes, String SID) {
+	public IRCChannel(String ChannelName, long ChannelTS, String SID) {
 		this.ChannelName = ChannelName;
 		this.ChannelTS = ChannelTS;
-		this.ChannelModes = ChannelModes;
 		this.SID = SID;
 	}
 	
@@ -63,18 +65,43 @@ public class IRCChannel {
 
 
 	public String getChannelModes() {
-		return ChannelModes;
+		int i = 0;
+		String modes = "";
+		while (i < channelMode.size()) {
+			modes = modes + channelMode.get(i);
+			i++;
+		}
+		return modes;
 	}
 	
 	public String getSID() {
 		return SID;
 	}
 
-
-	public void setChannelModes(String channelModes) {
-		ChannelModes = channelModes;
-	}
 	
+	public void setChannelModes(String mode) {
+		int i = 0;
+		while (i < mode.length()) {
+			String modechar = mode.substring(i, i+1);
+			if (!modechar.contains("+") && !modechar.contains("-") && !(i == 0)) {
+				if (mode.substring(i-1, i).equals("+")) {
+					if (!this.channelMode.contains(modechar)) {
+						this.channelMode.add(modechar);
+					}
+				}
+				else if (mode.substring(i-1, i).equals("-") || (mode.startsWith("-") && (!mode.contains("+"))))  {
+					this.channelMode.remove(modechar);
+				}
+				else {
+					if (!this.channelMode.contains(modechar)) {
+						this.channelMode.add(modechar);
+					}
+				}
+				
+			}
+			i++;
+		}
+	}
 	public void addUser(String nick, String modes) {
 		Members.put(nick, modes);
 	}

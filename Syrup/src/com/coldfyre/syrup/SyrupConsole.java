@@ -101,7 +101,7 @@ public class SyrupConsole implements Runnable {
 								name = channel.getChannelName();
 								modes = channel.getChannelModes();
 								SID = channel.getSID();
-								System.out.println(name + "\t"  + modes + "\t " + channel.getUserCount() + "\t" + SID);
+								System.out.println(name + "\t\t\t"  + modes + "\t " + channel.getUserCount() + "\t" + SID);
 							}
 						}
 					}

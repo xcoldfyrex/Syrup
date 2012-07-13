@@ -12,6 +12,7 @@ import com.coldfyre.syrup.WaffleIRCClient;
 import com.coldfyre.syrup.TS6.UID;
 import com.coldfyre.syrup.Util.Config;
 import com.coldfyre.syrup.Util.Log;
+import com.coldfyre.syrup.Util.SQL;
 
 public class WaffleClient implements Runnable {
 	protected String RemoteServerID;
@@ -141,7 +142,13 @@ public class WaffleClient implements Runnable {
 			SIDGen SID = new SIDGen();
 			RemoteServerID = SID.generateSID();
 			this.RemoteServerVersion = Format.join(split, " ", 5);
-			
+			String sql = SQL.getWaffleSettings(RemoteServerName);
+			System.out.println("SQL: " + sql);
+			if (sql.equals("")) {
+				CloseSocket("ERROR: "+ RemoteServerName +" Unable to verify link! You should never see this!");
+				badLink = true;
+				return false;
+			}
 			if (Syrup.WaffleClients.containsKey(RemoteServerName)) {
 				WriteServices("LINK: Connection to "+RemoteServerName +" failed with error: Server "+RemoteServerName+" already exists!");
 				CloseSocket("ERROR: "+ RemoteServerName +" already exists!");
