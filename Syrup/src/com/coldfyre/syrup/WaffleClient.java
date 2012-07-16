@@ -22,6 +22,9 @@ public class WaffleClient implements Runnable {
 	protected String RemoteServerHostname;
 	protected String RemoteServerName;
 	protected String RemoteServerVersion;
+	protected String lobbyChannel;
+	protected String consoleChannel;
+	protected String botName;
 	protected long BurstTS; 
 	public long LastPong = 0;
 	protected long connectTS;
@@ -109,6 +112,9 @@ public class WaffleClient implements Runnable {
 			split[0] = split[0].substring(1);
 			command = split[1];
 		}
+		if (burstSent) {
+			if (split[0].equalsIgnoreCase("%bot%")) split[0] = this.botName;
+		}
 		
 		if (data.startsWith("ERROR")){
 			System.out.println("\u001B[1;31m[ERROR]"+ data +" \u001B[0m");
@@ -149,16 +155,32 @@ public class WaffleClient implements Runnable {
 				badLink = true;
 				return false;
 			}
+			String[] sqlparams =  sql.split(" ");
+			this.lobbyChannel = sqlparams[4];
+			this.consoleChannel = sqlparams[5];
 			if (Syrup.WaffleClients.containsKey(RemoteServerName)) {
 				WriteServices("LINK: Connection to "+RemoteServerName +" failed with error: Server "+RemoteServerName+" already exists!");
+				WriteSocket("ERROR : "+ RemoteServerName +" already exists!");
 				CloseSocket("ERROR: "+ RemoteServerName +" already exists!");
 				badLink = true;
 				return false;
 			}
 			else {
-				WriteServices("LINK: Verified incoming server connection inbound from "+RemoteServerName +"("+ RemoteServerVersion+")");
-				SendBurst();
-				return true;
+				if (sqlparams[2].equals(RemoteServerHash)) {
+					WriteServices("LINK: Verified incoming server connection inbound from "+RemoteServerName +"("+ RemoteServerVersion+")");
+					
+					SendBurst();
+					return true;
+				}
+				else {
+					WriteServices("LINK: Link auth failed for "+RemoteServerName);
+					WriteSocket("ERROR :Invalid link hash!");
+					CloseSocket("ERROR: Invalid link hash!");
+
+					badLink = true;
+					return false;
+					
+				}
 			}
 		}	
 		
@@ -170,8 +192,15 @@ public class WaffleClient implements Runnable {
 				WriteSocket(Config.pre +"PING " + Config.SID + " "+ RemoteServerID);
 				WriteConnectorSocket(":"+Config.serverName + " SERVER " + RemoteServerName + " * 0 " + RemoteServerID + " " + RemoteServerVersion);
 				Syrup.WaffleClients.put(RemoteServerName, this);
-				//WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + UID  + " " + RemoteServerName + " " + RemoteServerName + " Andy Dick " + "127.0.0.0 " + System.currentTimeMillis() / 1000L + " +r : Dot");
-		    	Log.info("Incoming link completed: " + RemoteServerName+ " "+this.RemoteServerAddress, "LIGHT_YELLOW");
+				String UID = Syrup.uidgen.generateUID(RemoteServerID);
+				String sql = SQL.getWaffleSettings(RemoteServerName);
+				String[] sqlparams =  sql.split(" ");
+				WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + sqlparams[0]  + "/mc " + sqlparams[3] + " " + sqlparams[3] + " " + sqlparams[0] + " " + sqlparams[1] + " " + System.currentTimeMillis() / 1000L + " +r :Waffle Bot");
+				WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + lobbyChannel + " " + System.currentTimeMillis() / 1000L + " +nt :o," + UID);
+				WaffleIRCClient waffleircclient = new WaffleIRCClient(sqlparams[0],RemoteServerName,false,RemoteServerID,System.currentTimeMillis() / 1000L);
+				Syrup.WaffleIRCClients.put(UID, waffleircclient);
+				this.botName = sqlparams[0];
+		    	Log.info("Incoming link completed: " + RemoteServerName + " " + this.RemoteServerAddress, "LIGHT_YELLOW");
 				for (String key : Syrup.IRCClient.keySet()) {
 					IRCUser person;
 					person = Syrup.IRCClient.get(key);
@@ -231,7 +260,9 @@ public class WaffleClient implements Runnable {
 				}
 				else {
 					badLink = true;
+					WriteSocket("ERROR :PROTCOL ERROR: MALFORMED FJOIN");
 					CloseSocket("PROTCOL ERROR: MALFORMED FJOIN");
+
 				}
 				
 			}

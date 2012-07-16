@@ -291,6 +291,7 @@ public class Syrup {
 			String message = Format.join(split, " ", 3);
 			String source = IRCUser.getNick(split[0]);
 			String target = split[2];
+			if (!target.startsWith("#")) target = WaffleIRCClients.get(split[2]).nick;
 			WriteWaffleSockets(":" + source + " PRIVMSG " + target + " :" + message);			
 		}
 		
