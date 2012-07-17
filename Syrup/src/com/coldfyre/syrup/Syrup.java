@@ -108,6 +108,13 @@ public class Syrup {
     	Log.info("Exiting main loop, terminating." , "LIGHT_YELLOW");
 	}
     
+    public static boolean ShouldGoToWaffles(String[] split) {
+    	//if (split[1].equals("QUIT")) {
+    	//	if (split[0])
+    	//	
+    	//}
+    	return true;
+    }
     
     public static boolean ParseLinkCommand(String data) {
 		String[] split = data.split(" ");
@@ -145,9 +152,11 @@ public class Syrup {
 				String reason;
 				reason = Format.join(split, " ", 2);
 				if (reason.startsWith(":")) reason = reason.substring(1);
-				WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " QUIT Killed: " + reason);
-				UID.removeUID(split[0]);
-				RemoveFromChannelsByUID(split[0]);	
+				if (IRCClient.get(split[2]) != null) { 
+					WriteWaffleSockets(":" + IRCClient.get(split[2]).nick + " QUIT Killed: " + reason);
+					UID.removeUID(split[2]);
+					RemoveFromChannelsByUID(split[0]);	
+				}
 			}
 		}
 		
@@ -212,7 +221,10 @@ public class Syrup {
 			String target,newmode;
 			//sender = split[0];
 			target = split[2];
-			if (split.length == 5) {
+			if (split.length == 4) {
+				newmode = split[3];
+			}
+			else if (split.length == 5) {
 				newmode = split[4];
 			} 
 			else {
@@ -287,12 +299,25 @@ public class Syrup {
 			if (split[3].startsWith(":")) split[3] = split[3].substring(1);
 			if (split[2].startsWith(":")) split[2] = split[2].substring(1);
 			if (split[0].startsWith(":")) split[0] = split[0].substring(1);
-
 			String message = Format.join(split, " ", 3);
 			String source = IRCUser.getNick(split[0]);
 			String target = split[2];
-			if (!target.startsWith("#")) target = WaffleIRCClients.get(split[2]).nick;
-			WriteWaffleSockets(":" + source + " PRIVMSG " + target + " :" + message);			
+			if (message.equalsIgnoreCase("VERSION")) {
+			
+			}
+			
+			else {
+				if (!target.startsWith("#")) {
+					
+					if (WaffleIRCClients.get(split[2]) != null) {
+						target = WaffleIRCClients.get(split[2]).nick;
+						WriteWaffleSockets(":" + source + " PRIVMSG " + target + " :" + message);
+					}
+				}
+				else {
+					WriteWaffleSockets(":" + source + " PRIVMSG " + target + " :" + message);
+				}
+			}
 		}
 		
 		if (command.startsWith("IDLE")) {

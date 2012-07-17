@@ -23,7 +23,7 @@ public class IRCChannel {
 	public String getMemberListByUID() {
 		String memberlist = "";
 		for (String key : Members.keySet()) {
-			memberlist = memberlist + " ," + key ;
+			memberlist = memberlist + " ," + key;
 		}
 		return memberlist;
 	}
