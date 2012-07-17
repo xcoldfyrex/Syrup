@@ -1,8 +1,14 @@
 package com.coldfyre.syrup;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.coldfyre.syrup.Util.Config;
 
 public class WaffleIRCClient {
+
+	public List<String> userChannels = new ArrayList<String>();
+	
 	public WaffleIRCClient(String nick, String host, boolean cloaked, String SID, long signon) {
 		this.nick = nick;
 		this.host = host;
@@ -22,6 +28,19 @@ public class WaffleIRCClient {
 		this.hostmask = hiddenhost;
 		
 	}
+	
+	public void addChannel(String channel) {
+		if (!userChannels.contains(channel)) {
+			this.userChannels.add(channel);
+		}
+	}
+	
+	public void removeChannel(String channel) {
+		if (userChannels.contains(channel)) {
+			this.userChannels.remove(channel);
+		}	
+	}
+	
 	public String nick = "Guest";
 	public String host = "unknown";
 	public String hostmask = "hidden.host";

@@ -6,6 +6,8 @@ import java.util.List;
 public class IRCUser {
 	
 	public List<String> serverMode = new ArrayList<String>();
+	public List<String> userChannels = new ArrayList<String>();
+
 	public IRCUser(String server, String UID, long signonTime, String nick, String realhost, String hostmask, String ident, String ipaddress, long lastActivity, String modes, String realname) {
 		this.UID = UID;
 		this.nick = nick;
@@ -42,6 +44,18 @@ public class IRCUser {
 		this.joined = false;
 	}
 	*/
+	
+	public void addChannel(String channel) {
+		if (!userChannels.contains(channel)) {
+			this.userChannels.add(channel);
+		}
+	}
+	
+	public void removeChannel(String channel) {
+		if (userChannels.contains(channel)) {
+			this.userChannels.remove(channel);
+		}	
+	}
 	
 	public void setModes(String mode) {
 		this.textModes = mode.replace("~", "q").replace("&", "a").replace("@", "o").replace("%", "h").replace("+", "v").replaceAll("[^A-Za-z0-9 ]", "");

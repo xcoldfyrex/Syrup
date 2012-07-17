@@ -7,6 +7,8 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.coldfyre.syrup.WaffleIRCClient;
 import com.coldfyre.syrup.TS6.UID;
@@ -29,6 +31,8 @@ public class WaffleClient implements Runnable {
 	public long LastPong = 0;
 	protected long connectTS;
 	protected boolean badLink = false;
+	
+	public List<String> userChannels = new ArrayList<String>();
 	
 	public boolean capabSent = false;
 	public boolean capabStarted = false;
@@ -158,6 +162,7 @@ public class WaffleClient implements Runnable {
 			String[] sqlparams =  sql.split(" ");
 			this.lobbyChannel = sqlparams[4];
 			this.consoleChannel = sqlparams[5];
+			addChannel(sqlparams[4]);
 			if (Syrup.WaffleClients.containsKey(RemoteServerName)) {
 				WriteServices("LINK: Connection to "+RemoteServerName +" failed with error: Server "+RemoteServerName+" already exists!");
 				WriteSocket("ERROR : "+ RemoteServerName +" already exists!");
@@ -254,6 +259,7 @@ public class WaffleClient implements Runnable {
 					tempnick = UID.GetWaffleClientNick(joinedUsersNick[1]);
 					if (tempnick != null) {
 						if (tempnick.equalsIgnoreCase(joinedUsersNick[1]) && SID.equalsIgnoreCase(RemoteServerID)) { 
+							Syrup.WaffleIRCClients.get(senderUID).addChannel(channel);
 							WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + channel + " " + System.currentTimeMillis() / 1000L + " +nt :," + senderUID);
 						}
 					}
@@ -366,6 +372,18 @@ public class WaffleClient implements Runnable {
 	
 	public String getServerID() {
 		return RemoteServerID;
+	}
+	
+	public void addChannel(String channel) {
+		if (!userChannels.contains(channel)) {
+			this.userChannels.add(channel);
+		}
+	}
+	
+	public void removeChannel(String channel) {
+		if (userChannels.contains(channel)) {
+			this.userChannels.remove(channel);
+		}	
 	}
 	
 }

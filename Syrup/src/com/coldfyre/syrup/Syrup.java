@@ -1,7 +1,9 @@
 package com.coldfyre.syrup;
 
 import java.net.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.io.*;
 
 import com.coldfyre.syrup.UIDGen;
@@ -81,8 +83,6 @@ public class Syrup {
         	Log.info("Started client listener thread", "LIGHT_GREEN");
     	}
     	
-    	
-    	
         while (running) {
         	while (connected && connectorSocket != null) {
         		String connectorStream = in.readLine();
@@ -108,11 +108,22 @@ public class Syrup {
     	Log.info("Exiting main loop, terminating." , "LIGHT_YELLOW");
 	}
     
-    public static boolean ShouldGoToWaffles(String[] split) {
-    	//if (split[1].equals("QUIT")) {
-    	//	if (split[0])
-    	//	
-    	//}
+    public static boolean ShouldGoToWaffles(String data, String UID, String Server) {
+    	String[] split = data.split(" ");
+    	if (split[1].equals("QUIT")) {
+    		if (IRCClient.get(UID).userChannels.size() == 0) return false;
+    		List<String> intersection = new ArrayList<String>(WaffleClients.get(Server).userChannels); 
+    		intersection.retainAll(IRCClient.get(UID).userChannels);
+    		if (intersection.size() == 0) return false; 
+    	}
+    	
+    	if (split[1].equals("PART")) {
+    		if (WaffleClients.get(Server).userChannels.contains(split[2])) return true;
+    		List<String> intersection = new ArrayList<String>(WaffleClients.get(Server).userChannels); 
+    		intersection.retainAll(IRCClient.get(UID).userChannels);
+    		if (intersection.size() == 0) return false;
+    		return false;
+    	}
     	return true;
     }
     
@@ -153,7 +164,7 @@ public class Syrup {
 				reason = Format.join(split, " ", 2);
 				if (reason.startsWith(":")) reason = reason.substring(1);
 				if (IRCClient.get(split[2]) != null) { 
-					WriteWaffleSockets(":" + IRCClient.get(split[2]).nick + " QUIT Killed: " + reason);
+					WriteWaffleSockets(":" + IRCClient.get(split[2]).nick + " QUIT Killed: " + reason,split[0]);
 					UID.removeUID(split[2]);
 					RemoveFromChannelsByUID(split[0]);	
 				}
@@ -186,7 +197,7 @@ public class Syrup {
 				}
 			}
 			else if (split.length > 5 ){
-				WriteWaffleSockets(Config.pre + "FMODE " + split[2] + " " + source + " " + mode + " " + finaltarget);	
+				WriteWaffleSockets(Config.pre + "FMODE " + split[2] + " " + source + " " + mode + " " + finaltarget,null);	
 			}
 			else {
 				String target = split[2];
@@ -198,7 +209,7 @@ public class Syrup {
 					newmode = split[5] + split[6];
 				}
 				IRCChannels.get(target).setChannelModes(newmode);
-				WriteWaffleSockets(Config.pre + "FMODE " + split[2] + " set mode: " + mode );
+				WriteWaffleSockets(Config.pre + "FMODE " + split[2] + " set mode: " + mode,null );
 			}
 		}
 		
@@ -251,6 +262,7 @@ public class Syrup {
 				//channel exists, just add people
 				if (IRCChannels.get(channame) != null) {
 					IRCChannels.get(channame).addUser(infoz[1], infoz[0]);
+					IRCClient.get(infoz[1]).addChannel(channame);
 				}
 				//is new chan
 				else {
@@ -258,18 +270,20 @@ public class Syrup {
 					IRCChannels.put(channame, channel);
 					IRCChannels.get(channame).setChannelModes(chanmodes);
 					IRCChannels.get(channame).addUser(infoz[1], infoz[0]);
+					IRCClient.get(infoz[1]).addChannel(channame);
 				}
-			WriteWaffleSockets(Config.pre + "FJOIN " + channame + " ," + IRCClient.get(infoz[1]).nick);
+			WriteWaffleSockets(Config.pre + "FJOIN " + channame + " ," + IRCClient.get(infoz[1]).nick,null);
 			}
 		}
 		
 		if (command.equalsIgnoreCase("UID")) {
 			UID.add(split);
-			WriteWaffleSockets(Config.pre + "UID " + split[4] + " " + split[6] + " "+  split[7]);
+			WriteWaffleSockets(Config.pre + "UID " + split[4] + " " + split[6] + " "+  split[7],null);
 		}
 		
 		if (command.equalsIgnoreCase("PART")) {
-			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " PART " + split[2]);
+			IRCClient.get(split[0]).removeChannel(split[2]);
+			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " PART " + split[2],split[0]);
 			RemoveFromChannelsByUID(split[0]);
 		}
 		
@@ -277,13 +291,13 @@ public class Syrup {
 			String reason;
 			reason = Format.join(split, " ", 2);
 			if (reason.startsWith(":")) reason = reason.substring(1);
-			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " QUIT " + reason);
+			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " QUIT " + reason,split[0]);
 			UID.removeUID(split[0]);
 			RemoveFromChannelsByUID(split[0]);	
 		}
 		
 		if (command.startsWith("NICK")) {
-			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " NICK " + split[2]);
+			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " NICK " + split[2],split[0]);
 			IRCClient.get(split[0]).nick = split[2];
 		}
 		
@@ -311,11 +325,11 @@ public class Syrup {
 					
 					if (WaffleIRCClients.get(split[2]) != null) {
 						target = WaffleIRCClients.get(split[2]).nick;
-						WriteWaffleSockets(":" + source + " PRIVMSG " + target + " :" + message);
+						WriteWaffleSockets(":" + source + " PRIVMSG " + target + " :" + message,split[0]);
 					}
 				}
 				else {
-					WriteWaffleSockets(":" + source + " PRIVMSG " + target + " :" + message);
+					WriteWaffleSockets(":" + source + " PRIVMSG " + target + " :" + message,split[0]);
 				}
 			}
 		}
@@ -343,12 +357,14 @@ public class Syrup {
 		}
     }
     
-    public static void WriteWaffleSockets(String data) {
+    public static void WriteWaffleSockets(String data, String UID) {
     	for (String key : Syrup.WaffleClients.keySet()) {
 			WaffleClient link;
 			link = Syrup.WaffleClients.get(key);
 			if (link != null) {
-    			WaffleClients.get(key).WriteSocket(data);
+				if (ShouldGoToWaffles(data, UID, key)) {
+					WaffleClients.get(key).WriteSocket(data);
+				}
 			}
 		}	
     }
