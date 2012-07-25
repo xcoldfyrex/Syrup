@@ -85,22 +85,27 @@ public class Syrup {
     	
         while (running) {
         	while (connected && connectorSocket != null) {
-        		String connectorStream = in.readLine();
-        		if (connectorStream == null) {
-        			log.warn("Lost link to " + Config.connectorHost, "LIGHT_RED");
-        			closeConnectorSocket();
-        		} else {
-        			if (debugMode) {
-        				log.def("[IN] " + connectorStream, "");
+        		try {
+        			String connectorStream = in.readLine();
+        			if (connectorStream == null) {
+        				log.warn("Lost link to " + Config.connectorHost, "LIGHT_RED");
+        				closeConnectorSocket();
+        			} else {
+        				if (debugMode) {
+        					log.def("[IN] " + connectorStream, "");
+        				}
+        				ParseLinkCommand(connectorStream);
         			}
-        			ParseLinkCommand(connectorStream);
-        		}
             
-        		if (sentCapab && ! sentBurst){
-        			SendBurst();
-        		} 
-        		if (!connectorSocket.isConnected()) {
-        	    	Log.info("Connector socket lost connection" , "LIGHT_YELLOW");
+        			if (sentCapab && ! sentBurst){
+        				SendBurst();
+        			} 
+        			if (!connectorSocket.isConnected()) {
+        				Log.info("Connector socket lost connection" , "LIGHT_YELLOW");
+        			}
+        		}
+        		catch(SocketException e) {
+    				Log.info("Connector socket lost connection" , "LIGHT_YELLOW");
         		}
         	}
         }
@@ -278,7 +283,7 @@ public class Syrup {
 		
 		if (command.equalsIgnoreCase("UID")) {
 			UID.add(split);
-			WriteWaffleSockets(Config.pre + "UID " + split[4] + " " + split[6] + " "+  split[7],null);
+			WriteWaffleSockets(Config.pre + "UID " + split[4] + " " + split[7] + " "+  split[6],null);
 		}
 		
 		if (command.equalsIgnoreCase("PART")) {

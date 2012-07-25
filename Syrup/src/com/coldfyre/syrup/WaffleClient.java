@@ -31,6 +31,7 @@ public class WaffleClient implements Runnable {
 	public long LastPong = 0;
 	protected long connectTS;
 	protected boolean badLink = false;
+	protected long lobbyChannelTS = System.currentTimeMillis() / 1000L;
 	
 	public List<String> userChannels = new ArrayList<String>();
 	
@@ -92,6 +93,12 @@ public class WaffleClient implements Runnable {
         catch(Exception e)
         {
             e.printStackTrace();
+            try {
+				in.close();
+	            out.close();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
         }
         finally
         {
@@ -160,7 +167,19 @@ public class WaffleClient implements Runnable {
 				return false;
 			}
 			String[] sqlparams =  sql.split(" ");
+			
+			
 			this.lobbyChannel = sqlparams[4];
+			if (Syrup.IRCChannels.containsKey(lobbyChannel)) {
+				this.lobbyChannelTS = Syrup.IRCChannels.get(lobbyChannel).getChannelTS();
+				if (Syrup.debugMode) {
+					Log.info(this.RemoteServerName + ": Lobby TS: " + this.lobbyChannelTS, "LIGHT_YELLOW");
+				}
+			} else {
+				if (Syrup.debugMode) {
+					Log.info(this.RemoteServerName + ": Lobby TS not found, using current time", "LIGHT_YELLOW");
+				}
+			}
 			this.consoleChannel = sqlparams[5];
 			addChannel(sqlparams[4]);
 			if (Syrup.WaffleClients.containsKey(RemoteServerName)) {
@@ -201,7 +220,7 @@ public class WaffleClient implements Runnable {
 				String sql = SQL.getWaffleSettings(RemoteServerName);
 				String[] sqlparams =  sql.split(" ");
 				WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + sqlparams[0]  + "/mc " + sqlparams[3] + " " + sqlparams[3] + " " + sqlparams[0] + " " + sqlparams[1] + " " + System.currentTimeMillis() / 1000L + " +r :Waffle Bot");
-				WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + lobbyChannel + " " + System.currentTimeMillis() / 1000L + " +nt :o," + UID);
+				WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + lobbyChannel + " " + lobbyChannelTS + " +nt :o," + UID);
 				WaffleIRCClient waffleircclient = new WaffleIRCClient(sqlparams[0],RemoteServerName,false,RemoteServerID,System.currentTimeMillis() / 1000L);
 				Syrup.WaffleIRCClients.put(UID, waffleircclient);
 				this.botName = sqlparams[0];
@@ -260,7 +279,7 @@ public class WaffleClient implements Runnable {
 					if (tempnick != null) {
 						if (tempnick.equalsIgnoreCase(joinedUsersNick[1]) && SID.equalsIgnoreCase(RemoteServerID)) { 
 							Syrup.WaffleIRCClients.get(senderUID).addChannel(channel);
-							WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + channel + " " + System.currentTimeMillis() / 1000L + " +nt :," + senderUID);
+							WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + channel + " " + lobbyChannelTS + " +nt :," + senderUID);
 						}
 					}
 				}
