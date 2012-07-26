@@ -186,6 +186,8 @@ public class Syrup {
 			if (IRCUser.getNick(source) != null) {
 				source = IRCUser.getNick(source);
 			}
+			
+			//stacked modes, build a list
 			if (split.length > 6) {
 				for (int i = 5; split.length>i; i++ ) {
 					if (IRCClient.get(split[i]) != null) {
@@ -195,13 +197,22 @@ public class Syrup {
 					else if (WaffleIRCClients.get(split[i]) != null) {
 						modetarget = WaffleIRCClients.get(split[i]).nick + "/mc";
 					}
-					else {
+					else if(split[i].startsWith(":")) {
+						modetarget = "";
+					}
+					else 
+					{
 						modetarget = split[i];
 					}
 					finaltarget = finaltarget + modetarget + " ";
 				}
+				WriteWaffleSockets(Config.pre + "FMODE " + split[2] + " " + source + " " + mode + " " + finaltarget,null);	
 			}
-			else if (split.length > 5 ){
+			//single user, single mode
+			else if (split.length == 6 ){
+				if (IRCUser.getNick(split[5]) != null) {
+					finaltarget = IRCUser.getNick(split[5]);
+				}
 				WriteWaffleSockets(Config.pre + "FMODE " + split[2] + " " + source + " " + mode + " " + finaltarget,null);	
 			}
 			else {
