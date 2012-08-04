@@ -49,6 +49,7 @@ public class Syrup {
 	public static HashMap<String, WaffleIRCClient> WaffleIRCClients = new HashMap<String, WaffleIRCClient>();
 	public static HashMap<String, IRCChannel> IRCChannels = new HashMap<String, IRCChannel>();
 	public static HashMap<String, IRCServer> IRCServers = new HashMap<String, IRCServer>();
+	public static HashMap<String, String> WaffleClientsSID = new HashMap<String, String>();
 	
 	public static UIDGen uidgen = new UIDGen();
 
