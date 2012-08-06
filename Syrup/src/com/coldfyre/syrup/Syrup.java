@@ -89,7 +89,7 @@ public class Syrup {
         		try {
         			String connectorStream = in.readLine();
         			if (connectorStream == null) {
-        				log.warn("Lost link to " + Config.connectorHost, "LIGHT_RED");
+        				Log.warn("Lost link to " + Config.connectorHost, "LIGHT_RED");
         				closeConnectorSocket();
         			} else {
         				if (debugMode) {
@@ -439,7 +439,8 @@ public class Syrup {
     	sentBurst = false;
     	sentCapab = false;
     	if ((connectorSocket != null) && connectorSocket.isConnected()) {
-    		try { connectorSocket.close(); } catch (IOException e) { 
+    		try { connectorSocket.close(); } catch (IOException e) {     				
+    			Log.info("Caught exception closing connector: " + e , "LIGHT_YELLOW");
 			}
     	}
     	return true;

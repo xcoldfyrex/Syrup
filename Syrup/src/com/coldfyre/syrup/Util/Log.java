@@ -18,7 +18,7 @@ public class Log {
 		 echo(colorConvert(color) + "[INFO] " + message);
 	 }
 
-	 public void warn(Object message, String color){
+	 public static void warn(Object message, String color){
 		 echo(colorConvert(color) + "[WARN] " + message);
 
 	 }
