@@ -93,7 +93,8 @@ public class WaffleClient implements Runnable {
         }
         catch(Exception e)
         {
-        	Log.warn("Error reading input from " + this.RemoteServerAddress + ": "  + e, "LIGHT_YELLOW");
+        	Log.error("CAUGHT EXCEPTION FOR " + this.RemoteServerAddress + ": "  + e + " SHOWING TRACE BELOW", "LIGHT_RED");
+        	e.printStackTrace();
             threadOK = false;
             try {
 				in.close();
@@ -310,7 +311,7 @@ public class WaffleClient implements Runnable {
 					String UID = Syrup.uidgen.generateUID(this.RemoteServerID);
 					Syrup.WaffleIRCClients.put(UID, waffleircclient);
 					Log.info("JOIN " + UID + "->" + split[3]+ " from " + this.RemoteServerID, "LIGHT_GREEN");
-					WriteConnectorSocket(":" + this.RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + "/mc " + split[4] + " " + waffleircclient.hostmask + " " + split[3] + " 127.0.0.1 " + System.currentTimeMillis() / 1000L + " +r :Dot");
+					WriteConnectorSocket(":" + this.RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + "/mc " + split[4] + " " + waffleircclient.hostmask + " " + split[3] + " " + split[5] + " " + System.currentTimeMillis() / 1000L + " +r :Dot");
 				}
 			}
 		}
@@ -325,8 +326,8 @@ public class WaffleClient implements Runnable {
 			String message = Format.join(split, " ", 3);
 			String target = split[2];
 			// is the target a channel or real irc client?
-			if (! (Syrup.IRCChannels.containsKey(target) || Syrup.IRCClient.containsKey(target))) return false;
-			if (!target.startsWith("#")) target = Syrup.IRCClient.get(target).UID;
+			if (! (Syrup.IRCChannels.containsKey(target) || target.equals("") || (Syrup.IRCClient.get(target) == null))) return false;
+			if (Syrup.IRCClient.containsValue(target)) target = Syrup.IRCClient.get(target).UID;
 			//make sure the client is really on this link
 			if (split[0].equals("000")) {
 				WriteConnectorSocket(":" + this.botUID + " PRIVMSG " + target + " :" + message);
@@ -388,6 +389,7 @@ public class WaffleClient implements Runnable {
 			try {
 				clientSocket.close();
 			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
 	}
