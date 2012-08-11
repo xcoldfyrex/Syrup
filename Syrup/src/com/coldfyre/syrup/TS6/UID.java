@@ -32,33 +32,9 @@ public class UID {
 	public void purgeUIDByServer(String SID){
 		
 	}
-	public static String GetWaffleClientUID(String nickname) {
-		for (String key : Syrup.WaffleIRCClients.keySet()) {
-			WaffleIRCClient person;
-			person = Syrup.WaffleIRCClients.get(key);
-			if (nickname.equalsIgnoreCase(person.nick)) { return key; }
 
-		}
-		return null;
-	}
 	
-	public static String GetWaffleClientSID(String nickname) {
-		for (String key : Syrup.WaffleIRCClients.keySet()) {
-			WaffleIRCClient person;
-			person = Syrup.WaffleIRCClients.get(key);
-			if (nickname.equalsIgnoreCase(person.nick)) { return person.SID; }
-		}
-		return null;
-	}
-	
-	public static String GetWaffleClientNick(String nickname) {
-		for (String key : Syrup.WaffleIRCClients.keySet()) {
-			WaffleIRCClient person;
-			person = Syrup.WaffleIRCClients.get(key);
-			if (nickname.equalsIgnoreCase(person.nick)) { return person.nick; }
-		}
-		return null;
-	}
+
 	
 	
 	

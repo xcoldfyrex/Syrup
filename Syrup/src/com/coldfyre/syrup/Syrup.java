@@ -46,7 +46,6 @@ public class Syrup {
 	
 	public static HashMap<String, IRCUser> IRCClient = new HashMap<String, IRCUser>();
 	public static HashMap<String, WaffleClient> WaffleClients = new HashMap<String, WaffleClient>();
-	public static HashMap<String, WaffleIRCClient> WaffleIRCClients = new HashMap<String, WaffleIRCClient>();
 	public static HashMap<String, IRCChannel> IRCChannels = new HashMap<String, IRCChannel>();
 	public static HashMap<String, IRCServer> IRCServers = new HashMap<String, IRCServer>();
 	public static HashMap<String, String> WaffleClientsSID = new HashMap<String, String>();
@@ -162,17 +161,19 @@ public class Syrup {
 			String victom;
 			victom = split[2];
 			//was a waffle client
-			if (WaffleIRCClients.containsKey(victom)) {
-				WriteSocket(":"+split[2].substring(0,3) + " UID " + split[2] + " " + (System.currentTimeMillis() / 1000L) + " " + WaffleIRCClients.get(victom).nick + "/mc " + WaffleIRCClients.get(victom).host + " " + WaffleIRCClients.get(victom).hostmask + " " + WaffleIRCClients.get(victom).nick + " 127.0.0.1 " + System.currentTimeMillis() / 1000L + " +r :Minecraft Player");
-				WriteSocket(":"+split[2].substring(0,3) + " FJOIN #minecraft "+ System.currentTimeMillis() / 1000L + " +nt :,"+ split[2]);
-			} else {
-				String reason;
-				reason = Format.join(split, " ", 2);
-				if (reason.startsWith(":")) reason = reason.substring(1);
-				if (IRCClient.get(split[2]) != null) { 
-					WriteWaffleSockets(":" + IRCClient.get(split[2]).nick + " QUIT Killed: " + reason,split[0]);
-					UID.removeUID(split[2]);
-					RemoveFromChannelsByUID(split[0]);	
+			for (String key : WaffleClients.keySet()) {
+				if (WaffleClients.get(key).WaffleIRCClients.containsKey(victom)) {
+					WriteSocket(":"+split[2].substring(0,3) + " UID " + split[2] + " " + (System.currentTimeMillis() / 1000L) + " " + WaffleClients.get(key).WaffleIRCClients.get(victom).nick + "/mc " + WaffleClients.get(key).WaffleIRCClients.get(victom).host + " " + WaffleClients.get(key).WaffleIRCClients.get(victom).hostmask + " " + WaffleClients.get(key).WaffleIRCClients.get(victom).nick + " 127.0.0.1 " + System.currentTimeMillis() / 1000L + " +r :Minecraft Player");
+					WriteSocket(":"+split[2].substring(0,3) + " FJOIN #minecraft "+ System.currentTimeMillis() / 1000L + " +nt :,"+ split[2]);
+				} else {
+					String reason;
+					reason = Format.join(split, " ", 2);
+					if (reason.startsWith(":")) reason = reason.substring(1);
+					if (IRCClient.get(split[2]) != null) { 
+						WriteWaffleSockets(":" + IRCClient.get(split[2]).nick + " QUIT Killed: " + reason,split[0]);
+						UID.removeUID(split[2]);
+						RemoveFromChannelsByUID(split[0]);	
+					}
 				}
 			}
 		}
@@ -190,24 +191,25 @@ public class Syrup {
 			
 			//stacked modes, build a list
 			if (split.length > 6) {
+				for (String key : WaffleClients.keySet()) {
 				for (int i = 5; split.length>i; i++ ) {
 					if (IRCClient.get(split[i]) != null) {
-						
-						modetarget = IRCClient.get(split[i]).nick;					
-					} 
-					else if (WaffleIRCClients.get(split[i]) != null) {
-						modetarget = WaffleIRCClients.get(split[i]).nick + "/mc";
+							modetarget = IRCClient.get(split[i]).nick;					
+						} 
+						else if (WaffleClients.get(key).WaffleIRCClients.get(split[i]) != null) {
+							modetarget = WaffleClients.get(key).WaffleIRCClients.get(split[i]).nick + "/mc";
+						}
+						else if(split[i].startsWith(":")) {	
+							modetarget = "";
+						}
+						else 
+						{
+							modetarget = split[i];
+						}
+						finaltarget = finaltarget + modetarget + " ";
 					}
-					else if(split[i].startsWith(":")) {
-						modetarget = "";
-					}
-					else 
-					{
-						modetarget = split[i];
-					}
-					finaltarget = finaltarget + modetarget + " ";
+					WriteWaffleSockets(Config.pre + "FMODE " + split[2] + " " + source + " " + mode + " " + finaltarget,null);	
 				}
-				WriteWaffleSockets(Config.pre + "FMODE " + split[2] + " " + source + " " + mode + " " + finaltarget,null);	
 			}
 			//single user, single mode
 			else if (split.length == 6 ){
@@ -339,10 +341,12 @@ public class Syrup {
 			
 			else {
 				if (!target.startsWith("#")) {
-					
-					if (WaffleIRCClients.get(split[2]) != null) {
-						target = WaffleIRCClients.get(split[2]).nick;
-						WriteWaffleSockets(":" + source + " PRIVMSG " + target + " :" + message,split[0]);
+					for (String key : WaffleClients.keySet()) {
+
+						if (WaffleClients.get(key).WaffleIRCClients.get(split[2]) != null) {
+							target = WaffleClients.get(key).WaffleIRCClients.get(split[2]).nick;
+							WriteWaffleSockets(":" + source + " PRIVMSG " + target + " :" + message,split[0]);
+						}
 					}
 				}
 				else {
