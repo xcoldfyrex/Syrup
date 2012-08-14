@@ -282,17 +282,21 @@ public class WaffleClient implements Runnable {
 			//at present, this only supports one nick
 			if (split.length == 6) {
 				String channel = split[2];
-				if (channel.equals("%lobby%")) channel = this.lobbyChannel;
+				String mode = "";
 				String[] joinedUsersNick = split[5].split(",");
+				if (channel.equals("%lobby%")) {
+					channel = this.lobbyChannel;
+					mode = joinedUsersNick[0];
+				}
 				if (joinedUsersNick.length >= 1) {
 					String senderUID = getUIDFromNick(joinedUsersNick[1]);
 					if (senderUID.equals("")) {
-						Log.error(joinedUsersNick[1] + " tried to join channel on " + this.RemoteServerID +", but could not find UID", "LIGHT_RED");
+						Log.warn(joinedUsersNick[1] + " tried to join channel on " + this.RemoteServerID +", but could not find UID", "LIGHT_YELLOW");
 
 					} 
 					else {
 						this.WaffleIRCClients.get(senderUID).addChannel(channel);
-						WriteConnectorSocket(":" + this.RemoteServerID + " FJOIN " + channel + " " + this.lobbyChannelTS + " +nt :," + senderUID);
+						WriteConnectorSocket(":" + this.RemoteServerID + " FJOIN " + channel + " " + this.lobbyChannelTS + " +nt " + mode + "," + senderUID);
 					}
 						
 					
@@ -330,6 +334,11 @@ public class WaffleClient implements Runnable {
 			sourceUID = getUIDFromNick(sourceUID);
 			String message = Format.join(split, " ", 3);
 			String target = split[2];
+			//blank msgs are a protocol violation. bad!
+			if (message.replaceAll(" ", "").equals("")) {
+				Log.warn(split[0] + " sent privmsg with no target on " + this.RemoteServerID, "LIGHT_YELLOW");
+				return false;
+			}
 			// is the target a channel or real irc client?
 			if (! (Syrup.IRCChannels.containsKey(target) || target.equals("") || (Syrup.IRCClient.get(target) == null))) return false;
 			if (Syrup.IRCClient.containsValue(target)) target = Syrup.IRCClient.get(target).UID;
