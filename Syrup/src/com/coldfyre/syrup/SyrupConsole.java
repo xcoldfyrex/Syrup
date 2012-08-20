@@ -46,7 +46,7 @@ public class SyrupConsole implements Runnable {
 				else if (userInputArgs[0].equalsIgnoreCase("CONNECT")) 
 				{
 					
-					Syrup.openConnectorSocket();					
+					Syrup.reconnectLink();
 
 				} 
 				else if (userInputArgs[0].equalsIgnoreCase("LINKS")) {
@@ -126,17 +126,22 @@ public class SyrupConsole implements Runnable {
 				
 				else if (userInputArgs[0].equalsIgnoreCase("CLIENTS")) {
 					if (Syrup.WaffleClients.size() != 0) {
-						//String name,sid,host;
-						//Log.noTS("I have " + Syrup.WaffleIRCClients.size() + " WaffleIRC client(s) connected:", "LIGHT_CYAN");
-						//Log.noTS("=======================================", "LIGHT_CYAN");
-						//for (String key : Syrup.WaffleIRCClients.keySet()) {
-						//	WaffleIRCClient person;
-						//	person = Syrup.WaffleIRCClients.get(key);
-						//	sid = person.SID;
-						//	name = person.nick;
-						//	host = person.host;
-						//	System.out.println(name + "\t" + key + "\t " + sid + "\t " + host);
-						//}
+						String name,sid,host;
+						Log.noTS("WaffleIRC client(s) connected:", "LIGHT_CYAN");
+						Log.noTS("=======================================", "LIGHT_CYAN");
+						for (String serverKey : Syrup.WaffleClients.keySet()) {
+							WaffleClient server = Syrup.WaffleClients.get(serverKey);
+							for (String personKey : server.WaffleIRCClients.keySet()) {
+								WaffleIRCClient person;
+								person = server.WaffleIRCClients.get(personKey);
+								sid = person.SID;
+								name = person.nick;
+								host = person.host;
+								System.out.println(name + "\t" + personKey + "\t " + sid + "\t " + host);
+							}
+							
+						}
+
 					} 
 					else {
 						Log.noTS("No WaffleIRC clients connected!", "LIGHT_CYAN");

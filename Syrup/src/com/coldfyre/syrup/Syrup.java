@@ -17,7 +17,8 @@ public class Syrup {
     public static BufferedReader in = null;
     
 
-	public static Socket connectorSocket = null;	
+	public static Socket connectorSocket = null;
+	public static Socket linkSocket = null;
 	public static boolean running = true;
 	public static boolean connected = false;
 	public static boolean sentBurst = false;
@@ -71,11 +72,9 @@ public class Syrup {
 		pingThread.setName("PING Thread");
 		
     	if (Config.GetProperties()) {
-    		if (openConnectorSocket()) {
-        		connected = true;
-        		out = new PrintStream(connectorSocket.getOutputStream(), true);
-        		in = new BufferedReader(new InputStreamReader(connectorSocket.getInputStream()));
-        	}
+    		//if (openConnectorSocket()) {
+    		openConnectorSocket();
+        	//}
     		waffleListener = new WaffleListener(Config.localPort);
         	waffleListenerThread = new Thread(waffleListener);
         	waffleListenerThread.start();
@@ -105,7 +104,7 @@ public class Syrup {
         			}
         		}
         		catch(SocketException e) {
-    				Log.info("Connector socket lost connection" , "LIGHT_YELLOW");
+    				Log.info("Cannot read from link stream: " + e  , "LIGHT_RED");
         		}
         	}
         }
@@ -135,12 +134,8 @@ public class Syrup {
     	
     	if (split[1].equals("PRIVMSG")) {
     		if (searchServer.lobbyChannel.equalsIgnoreCase(split[2])) return true;
-    		/* TODO
-    		 * Make this fucking better...
-    		 */
-    		if (searchServer.WaffleIRCClients.containsKey(split[2].toLowerCase())) return true;
-    		if (searchServer.WaffleIRCClients.containsKey(split[2].toUpperCase())) return true;
-    		if (searchServer.WaffleIRCClients.containsKey(split[2])) return true;
+    		String searchUID = searchServer.getUID(split[2]);
+    		if (searchServer.WaffleIRCClients.containsKey(searchUID)) return true;
     		return false;
 
 
@@ -337,12 +332,9 @@ public class Syrup {
 		}
 		
     	if (data.equalsIgnoreCase("CAPAB START 1202")) {
-    		WriteSocket("CAPAB START 1201");
-    		WriteSocket("CAPAB CAPABILITIES :NICKMAX=33 CHANMAX=50 IDENTMAX=33 MAXTOPIC=500 MAXQUIT=500 MAXKICK=500 MAXGECOS=500 MAXAWAY=999 MAXMODES=1 HALFOP=1 PROTOCOL=1201");
-    		WriteSocket("CAPAB END");  
-    		WriteSocket("SERVER " + Config.serverName + " " + Config.linkPassword + " 0 "+ Config.SID +" :Syrup");
-    		sentCapab = true;
+    		sendCapab();
     	}
+    	
     	
 		if (command.startsWith("PRIVMSG")) {
 			if (split[3].startsWith(":")) split[3] = split[3].substring(1);
@@ -405,6 +397,25 @@ public class Syrup {
 			}
 		}	
     }
+    
+    public static void reconnectLink() {
+
+		if (openConnectorSocket()) {
+			sendCapab();
+			SendBurst();
+		}
+		else {
+			Log.error("Failed to relink", "LIGHT_RED");
+		}
+    }
+    
+    public static void sendCapab(){
+		WriteSocket("CAPAB START 1201");
+		WriteSocket("CAPAB CAPABILITIES :NICKMAX=33 CHANMAX=50 IDENTMAX=33 MAXTOPIC=500 MAXQUIT=500 MAXKICK=500 MAXGECOS=500 MAXAWAY=999 MAXMODES=1 HALFOP=1 PROTOCOL=1201");
+		WriteSocket("CAPAB END");  
+		WriteSocket("SERVER " + Config.serverName + " " + Config.linkPassword + " 0 "+ Config.SID +" :Syrup");
+		sentCapab = true;
+    }
     public static boolean SendBurst() {
     	WriteSocket(Config.pre+"BURST "+(System.currentTimeMillis() / 1000L));
 		WriteSocket(Config.pre+"VERSION : Syrup");
@@ -437,6 +448,7 @@ public class Syrup {
     	sentCapab = false;
         try {
         	connectorSocket = new Socket(Config.connectorHost, Config.connectorPort);
+        	
         } catch (UnknownHostException e) {
         	Log.error("DNS Failure", "LIGHT_RED");
             return false;
@@ -448,8 +460,22 @@ public class Syrup {
         	Log.error("Failed connect to: " + Config.connectorHost, "LIGHT_RED");
         	return false;
         }
-        Log.info("Connected to server: "+Config.connectorHost, "LIGHT_GREEN");
+        Log.info("Linked to: "+Config.connectorHost, "LIGHT_GREEN");
+        Log.info("Socket info: "+connectorSocket.getInetAddress(), "LIGHT_GREEN");
         connected = true;
+        linkSocket = connectorSocket;
+		try {
+			in = new BufferedReader(new InputStreamReader(linkSocket.getInputStream()));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		try {
+			out = new PrintStream(linkSocket.getOutputStream(), true);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     	return true;
     }
     

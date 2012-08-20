@@ -87,7 +87,8 @@ public class WaffleClient implements Runnable {
             		}
             	}
             	catch(IOException ioe) {
-            		System.out.println(ioe);
+            		threadOK = false;
+            		Log.error(this.RemoteServerAddress +" Exception: " +ioe, "LIGHT_RED");
             	}
                 
                 
@@ -317,7 +318,7 @@ public class WaffleClient implements Runnable {
 					String UID = Syrup.uidgen.generateUID(this.RemoteServerID);
 					this.WaffleIRCClients.put(UID, waffleircclient);
 					Log.info("JOIN " + UID + "->" + split[3]+ " from " + this.RemoteServerID, "LIGHT_GREEN");
-					WriteConnectorSocket(":" + this.RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + "/mc " + split[4] + " " + waffleircclient.hostmask + " " + split[3] + " " + split[5] + " " + System.currentTimeMillis() / 1000L + " +r :Dot");
+					WriteConnectorSocket(":" + this.RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + "/mc " + split[4] + " " + waffleircclient.hostmask + " " + split[3] + " " + split[5] + " " + System.currentTimeMillis() / 1000L + " +rci :Dot");
 				}
 				else {
 					Log.warn(split[3] + " tried to join twice from " + this.RemoteServerID, "LIGHT_YELLOW");
@@ -430,6 +431,14 @@ public class WaffleClient implements Runnable {
 	
 	public String getServerID() {
 		return this.RemoteServerID;
+	}
+	
+	public String getUID(String nick) {
+		for (String key : this.WaffleIRCClients.keySet()) {
+			WaffleIRCClient client = WaffleIRCClients.get(key);
+			if (client.nick.toLowerCase().equalsIgnoreCase(nick)) return key;
+		}
+		return null;
 	}
 	
 	public void addChannel(String channel) {
