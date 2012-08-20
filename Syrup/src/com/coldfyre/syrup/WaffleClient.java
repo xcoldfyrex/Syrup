@@ -335,7 +335,7 @@ public class WaffleClient implements Runnable {
 			String message = Format.join(split, " ", 3);
 			String target = split[2];
 			//blank msgs are a protocol violation. bad!
-			if (message.replaceAll(" ", "").equals("")) {
+			if (message.replace(" ", "").equals("") || target.replace(" ", "").equals("") ) {
 				Log.warn(split[0] + " sent privmsg with no target on " + this.RemoteServerID, "LIGHT_YELLOW");
 				return false;
 			}

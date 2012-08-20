@@ -115,19 +115,35 @@ public class Syrup {
     
     public static boolean ShouldGoToWaffles(String data, String UID, String Server) {
     	String[] split = data.split(" ");
+    	WaffleClient searchServer = WaffleClients.get(Server);
+    	IRCUser searchPlayer = IRCClient.get(UID);
+    	
     	if (split[1].equals("QUIT")) {
-    		if (IRCClient.get(UID).userChannels.size() == 0) return false;
-    		List<String> intersection = new ArrayList<String>(WaffleClients.get(Server).userChannels); 
-    		intersection.retainAll(IRCClient.get(UID).userChannels);
+    		if (searchPlayer.userChannels.size() == 0) return false;
+    		List<String> intersection = new ArrayList<String>(searchServer.userChannels); 
+    		intersection.retainAll(searchPlayer.userChannels);
     		if (intersection.size() == 0) return false; 
     	}
     	
     	if (split[1].equals("PART")) {
-    		if (WaffleClients.get(Server).userChannels.contains(split[2])) return true;
-    		List<String> intersection = new ArrayList<String>(WaffleClients.get(Server).userChannels); 
-    		intersection.retainAll(IRCClient.get(UID).userChannels);
+    		if (searchServer.userChannels.contains(split[2])) return true;
+    		List<String> intersection = new ArrayList<String>(searchServer.userChannels); 
+    		intersection.retainAll(searchPlayer.userChannels);
     		if (intersection.size() == 0) return false;
     		return false;
+    	}
+    	
+    	if (split[1].equals("PRIVMSG")) {
+    		if (searchServer.lobbyChannel.equalsIgnoreCase(split[2])) return true;
+    		/* TODO
+    		 * Make this fucking better...
+    		 */
+    		if (searchServer.WaffleIRCClients.containsKey(split[2].toLowerCase())) return true;
+    		if (searchServer.WaffleIRCClients.containsKey(split[2].toUpperCase())) return true;
+    		if (searchServer.WaffleIRCClients.containsKey(split[2])) return true;
+    		return false;
+
+
     	}
     	return true;
     }
