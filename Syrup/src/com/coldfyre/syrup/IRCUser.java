@@ -102,6 +102,7 @@ public class IRCUser {
 	}
 	
 	public static String getNick(String UID){
+		UID = UID.replaceAll(":", "");
 		for (String key : Syrup.IRCClient.keySet()) {
 			IRCUser person;
 			person = Syrup.IRCClient.get(key);

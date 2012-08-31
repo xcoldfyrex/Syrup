@@ -229,6 +229,7 @@ public class Syrup {
 				}
 				WriteWaffleSockets(Config.pre + "FMODE " + split[2] + " " + source + " " + mode + " " + finaltarget,null);	
 			}
+			//stacked modes
 			else {
 				String target = split[2];
 				String newmode = "";
@@ -239,7 +240,7 @@ public class Syrup {
 					newmode = split[5] + split[6];
 				}
 				IRCChannels.get(target).setChannelModes(newmode);
-				WriteWaffleSockets(Config.pre + "FMODE " + split[2] + " set mode: " + mode,null );
+				WriteWaffleSockets(Config.pre + "FMODE " + split[2] + " " + source + " " + mode + " " + finaltarget,null );
 			}
 		}
 		
@@ -314,6 +315,11 @@ public class Syrup {
 		if (command.equalsIgnoreCase("PART")) {
 			IRCClient.get(split[0]).removeChannel(split[2]);
 			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " PART " + split[2],split[0]);
+			RemoveFromChannelsByUID(split[0]);
+		}
+		
+		if (command.equalsIgnoreCase("FHOST")) {
+			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " FHOST " + split[2].substring(1),split[0]);
 			RemoveFromChannelsByUID(split[0]);
 		}
 		
