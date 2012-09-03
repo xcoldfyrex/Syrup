@@ -42,6 +42,11 @@ public class IRCChannel {
 		return memberlist;
 	}
 	
+	public boolean hasUID(String UID){
+		if (this.Members.containsKey(UID)) return true;
+		return false;
+	}
+	
 	public String getChannelMemberInfo(String person) {
 		return Members.get(person);
 	}

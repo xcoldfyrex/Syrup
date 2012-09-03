@@ -171,7 +171,6 @@ public class WaffleClient implements Runnable {
 			Syrup.WaffleClientsSID.put(this.RemoteServerID, this.RemoteServerName);
 			this.RemoteServerVersion = Format.join(split, " ", 5);
 			String sql = SQL.getWaffleSettings(this.RemoteServerName);
-			System.out.println("SQL: " + sql);
 			if (sql.equals("")) {
 				CloseSocket("ERROR: "+ RemoteServerName +" Unable to verify link! You should never see this!");
 				this.badLink = true;
@@ -289,6 +288,14 @@ public class WaffleClient implements Runnable {
 					channel = this.lobbyChannel;
 					mode = joinedUsersNick[0];
 				}
+				else {
+					if (channel.startsWith("#")){
+						channel = channel + "/mc";
+					}
+					else {
+						channel = "#" + channel + "/mc";
+					}
+				}
 				if (joinedUsersNick.length >= 1) {
 					String senderUID = getUIDFromNick(joinedUsersNick[1]);
 					if (senderUID.equals("")) {
@@ -297,10 +304,13 @@ public class WaffleClient implements Runnable {
 					} 
 					else {
 						this.WaffleIRCClients.get(senderUID).addChannel(channel);
+						if (Syrup.IRCChannels.get(channel) == null) {
+							IRCChannel newChannel = new IRCChannel(channel, System.currentTimeMillis() / 1000L, Config.SID);
+							Syrup.IRCChannels.put(channel, newChannel);
+						}
+						Syrup.IRCChannels.get(channel).addUser(joinedUsersNick[1], "");
 						WriteConnectorSocket(":" + this.RemoteServerID + " FJOIN " + channel + " " + this.lobbyChannelTS + " +nt " + mode + "," + senderUID);
 					}
-						
-					
 				}
 				else {
 					badLink = true;
@@ -341,7 +351,7 @@ public class WaffleClient implements Runnable {
 				return false;
 			}
 			// is the target a channel or real irc client?
-			if (! (Syrup.IRCChannels.containsKey(target) || target.equals("") || (Syrup.IRCClient.get(target) == null))) return false;
+			if (! (Syrup.IRCChannels.containsKey(target) || (Syrup.IRCChannels.containsKey("#" + target + "/mc")) || target.equals("") || (Syrup.IRCClient.get(target) == null))) return false;
 			if (Syrup.IRCClient.containsValue(target)) target = Syrup.IRCClient.get(target).UID;
 			//make sure the client is really on this link
 			if (split[0].equals("000")) {
@@ -353,6 +363,18 @@ public class WaffleClient implements Runnable {
 			else if (sourceUID == null) {
 				//dunno how this would happen
 			}
+			//i think this is the lobby channel
+			else if (sourceUID.startsWith(this.RemoteServerID) && (Syrup.IRCChannels.get(target) != null)) {
+				WriteConnectorSocket(":" + sourceUID + " PRIVMSG " + target + " :" + message);
+			} 
+			else if (Syrup.IRCChannels.get("#" + target + "/mc") != null) {
+				//this would occour if the target channel is not the lobby
+				if (Syrup.IRCChannels.get("#" + target + "/mc").hasUID(split[0])) {
+					WriteConnectorSocket(":" + sourceUID + " PRIVMSG " + "#" + target + "/mc :" + message);
+				}
+				
+			}
+			//lastly, this is a person to person message
 			else if (sourceUID.startsWith(this.RemoteServerID)) {
 				WriteConnectorSocket(":" + sourceUID + " PRIVMSG " + target + " :" + message);
 			} 

@@ -133,9 +133,15 @@ public class Syrup {
     	}
     	
     	if (split[1].equals("PRIVMSG")) {
+    		//check lobby
     		if (searchServer.lobbyChannel.equalsIgnoreCase(split[2])) return true;
+    		//check private message
     		String searchUID = searchServer.getUID(split[2]);
     		if (searchServer.WaffleIRCClients.containsKey(searchUID)) return true;
+    		//check alternate channel
+    		for (String searchPerson : searchServer.WaffleIRCClients.keySet()) {
+    			if (searchServer.WaffleIRCClients.get(searchPerson).userChannels.contains(split[2])) return true;
+    		}
     		return false;
 
 
