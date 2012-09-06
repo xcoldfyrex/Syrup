@@ -262,6 +262,8 @@ public class WaffleClient implements Runnable {
 		if (command.startsWith("QUIT")) {
 			String senderUID;
 			senderUID = getUIDFromNick(split[0]);
+			if (!this.WaffleIRCClients.containsKey(senderUID)) return false;
+
 
 			if (senderUID != null) {
 				this.WaffleIRCClients.remove(senderUID);
@@ -327,13 +329,30 @@ public class WaffleClient implements Runnable {
 					WaffleIRCClient waffleircclient = new WaffleIRCClient(split[3],split[4],false,this.RemoteServerID,System.currentTimeMillis() / 1000L);
 					String UID = Syrup.uidgen.generateUID(this.RemoteServerID);
 					this.WaffleIRCClients.put(UID, waffleircclient);
-					Log.info("JOIN " + UID + "->" + split[3]+ " from " + this.RemoteServerID, "LIGHT_GREEN");
-					WriteConnectorSocket(":" + this.RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + "/mc " + split[4] + " " + waffleircclient.hostmask + " " + split[3] + " " + split[5] + " " + System.currentTimeMillis() / 1000L + " +rci :Dot");
+					Log.info("JOIN " + UID + "->" + split[3]+ "(" + split[5] + ") from " + this.RemoteServerID, "LIGHT_GREEN");
+					WriteConnectorSocket(":" + this.RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + "/mc " + split[4] + " " + waffleircclient.hostmask + " " + split[3] + " " + split[5] + " " + System.currentTimeMillis() / 1000L + " +irc :WaffleIRC Client");
 				}
 				else {
 					Log.warn(split[3] + " tried to join twice from " + this.RemoteServerID, "LIGHT_YELLOW");
 				}
 			}
+		}
+		
+		if (command.startsWith("PART")) {
+			if (split.length < 3) return false;
+			String channel = split[2];
+			if (channel.startsWith("#")){
+				channel = channel + "/mc";
+			}
+			else {
+				channel = "#" + channel + "/mc";
+			}
+			String sourceUID = split[3];
+			sourceUID = getUIDFromNick(sourceUID);
+			if (!this.WaffleIRCClients.containsKey(sourceUID)) return false;
+			if (sourceUID == null) return false;
+			WriteConnectorSocket(":" + sourceUID + " PART " + channel);			
+			
 		}
 		
 		if (command.startsWith("PRIVMSG")) {
@@ -343,6 +362,7 @@ public class WaffleClient implements Runnable {
 			if (split[2].startsWith(":")) split[2] = split[2].substring(1);
 			String sourceUID = split[0];
 			sourceUID = getUIDFromNick(sourceUID);
+			if (!this.WaffleIRCClients.containsKey(sourceUID)) return false;
 			String message = Format.join(split, " ", 3);
 			String target = split[2];
 			//blank msgs are a protocol violation. bad!

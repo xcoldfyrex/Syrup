@@ -3,7 +3,6 @@ package com.coldfyre.syrup.TS6;
 import com.coldfyre.syrup.Format;
 import com.coldfyre.syrup.IRCUser;
 import com.coldfyre.syrup.Syrup;
-import com.coldfyre.syrup.WaffleIRCClient;
 
 public class UID {
 	public void add(String[] UIDString) {
@@ -29,11 +28,7 @@ public class UID {
 		Syrup.IRCClient.remove(UID);
 	}
 	
-	public void purgeUIDByServer(String SID){
-		
-	}
 
-	
 
 	
 	

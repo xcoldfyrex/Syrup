@@ -2,8 +2,11 @@ package com.coldfyre.syrup;
 
 import java.net.*;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.io.*;
 
 import com.coldfyre.syrup.UIDGen;
@@ -260,8 +263,8 @@ public class Syrup {
 		if (command.equalsIgnoreCase("SQUIT")) {
 	    	Log.info("Lost server "+ split[2] + "from " + split[0] , "LIGHT_YELLOW");
 	    	String SID = IRCServers.get(split[2]).SID;
+	    	purgeUIDByServer(SID);
 	    	IRCServers.remove(split[2]);
-	    	UID.purgeUIDByServer(SID);
 
 		}
 		
@@ -514,6 +517,23 @@ public class Syrup {
 				else i++;
 			}
 			return -1;
+	}
+	
+	public static void purgeUIDByServer(String SID) {
+		try {
+			Iterator<Map.Entry<String, IRCUser>> i = IRCClient.entrySet().iterator();  
+			while (i.hasNext()) {  
+				Map.Entry<String, IRCUser> entry = i.next();  
+				if (entry.getKey().startsWith(SID)) {
+					Log.info("Lost client " + entry.getKey() + " from " + SID + " split"  , "LIGHT_YELLOW");
+					WriteWaffleSockets(":" + IRCClient.get(entry.getKey()).nick + " QUIT " + "*.net *.split",entry.getKey());
+					UID.removeUID(entry.getKey());
+					RemoveFromChannelsByUID(entry.getKey());
+				}  
+			}  
+		} catch (ConcurrentModificationException e)  {
+			
+		}
 	}
 	
 }
