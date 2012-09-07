@@ -185,17 +185,17 @@ public class Syrup {
 				if (WaffleClients.get(key).WaffleIRCClients.containsKey(victom)) {
 					WriteSocket(":"+split[2].substring(0,3) + " UID " + split[2] + " " + (System.currentTimeMillis() / 1000L) + " " + WaffleClients.get(key).WaffleIRCClients.get(victom).nick + "/mc " + WaffleClients.get(key).WaffleIRCClients.get(victom).host + " " + WaffleClients.get(key).WaffleIRCClients.get(victom).hostmask + " " + WaffleClients.get(key).WaffleIRCClients.get(victom).nick + " 127.0.0.1 " + System.currentTimeMillis() / 1000L + " +r :Minecraft Player");
 					WriteSocket(":"+split[2].substring(0,3) + " FJOIN #minecraft "+ System.currentTimeMillis() / 1000L + " +nt :,"+ split[2]);
-				} else {
-					String reason;
-					reason = Format.join(split, " ", 2);
-					if (reason.startsWith(":")) reason = reason.substring(1);
-					if (IRCClient.get(split[2]) != null) { 
-						WriteWaffleSockets(":" + IRCClient.get(split[2]).nick + " QUIT Killed: " + reason,split[0]);
-						UID.removeUID(split[2]);
-						RemoveFromChannelsByUID(split[0]);	
-					}
+					return true;
 				}
 			}
+			String reason;
+			reason = Format.join(split, " ", 2);
+			if (reason.startsWith(":")) reason = reason.substring(1);
+			if (IRCClient.get(split[2]) != null) { 
+				WriteWaffleSockets(":" + IRCClient.get(split[2]).nick + " QUIT Killed: " + reason,split[0]);
+				UID.removeUID(split[2]);
+				RemoveFromChannelsByUID(split[0]);	
+			}	
 		}
 		
 		if (command.equalsIgnoreCase("FMODE")) {
@@ -324,6 +324,20 @@ public class Syrup {
 		if (command.equalsIgnoreCase("PART")) {
 			IRCClient.get(split[0]).removeChannel(split[2]);
 			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " PART " + split[2],split[0]);
+			RemoveFromChannelsByUID(split[0]);
+		}
+		
+		if (command.equalsIgnoreCase("KICK")) {
+			for (String key : WaffleClients.keySet()) {
+				if (WaffleClients.get(key).WaffleIRCClients.containsKey(split[3])) {
+					//is a WaffleIRC client, rejoin them
+					WriteSocket(":"+split[3].substring(0,3) + " FJOIN " + split[2] + " " + System.currentTimeMillis() / 1000L + " +nt :,"+ split[3]);
+					return true;
+				} 
+			}
+			//regular IRC person
+			IRCClient.get(split[0]).removeChannel(split[2]);
+			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " KICK " + split[2] + " " + IRCClient.get(split[3]).nick,split[0]);
 			RemoveFromChannelsByUID(split[0]);
 		}
 		
