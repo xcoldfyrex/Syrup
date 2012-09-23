@@ -127,12 +127,7 @@ public class Syrup {
     		if (intersection.size() == 0) return false; 
     	}
     	
-    	if (split[1].equals("QUIT")) {
-    		if (searchPlayer.userChannels.size() == 0) return false;
-    		List<String> intersection = new ArrayList<String>(searchServer.userChannels); 
-    		intersection.retainAll(searchPlayer.userChannels);
-    		if (intersection.size() == 0) return false; 
-    	}
+
     	
     	/*
     	if (split[1].equals("PART")) {
@@ -261,6 +256,14 @@ public class Syrup {
 			}
 		}
 		
+		//server we are linked to
+		if (split[0].equalsIgnoreCase("SERVER")) {
+			IRCServer server;
+			server = new IRCServer(split[1],split[1],"", split[4]);
+			IRCServers.put(split[2], server);
+	    	Log.info("Introduced server "+ split[1] , "LIGHT_YELLOW");
+		}
+		// this is a remote server
 		if (command.equalsIgnoreCase("SERVER")) {
 			IRCServer server;
 			server = new IRCServer(split[2],split[0],"", split[5]);
@@ -331,7 +334,10 @@ public class Syrup {
 		
 		if (command.equalsIgnoreCase("PART")) {
 			IRCClient.get(split[0]).removeChannel(split[2]);
-			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " PART " + split[2],split[0]);
+			String reason;
+			reason = Format.join(split, " ", 3);
+			if (reason.startsWith(":")) reason = reason.substring(1);
+			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " PART " + split[2] + " " + reason,split[0]);
 			RemoveFromChannelsByUID(split[0]);
 		}
 		
@@ -344,12 +350,30 @@ public class Syrup {
 				} 
 			}
 			//regular IRC person
-			try {
-				IRCClient.get(split[0]).removeChannel(split[2]);
-			} catch (java.lang.NullPointerException e) {
-				Log.error("TRIED TO RMEOVE " + split[0] + " FROM " + split[2] + " " + e + " ", "LIGHT_RED");
+			String target = split[3];
+			if (split[0].startsWith(":")) split[0] = split[0].substring(1);
+			String kicker = split[0];
+			if (split[0].length() == 3) {
+				for (String server : IRCServers.keySet()) {
+					//Log.warn(server + " " + IRCServers.get(server).SID + " " + kicker, "LIGHT_RED");
+					if (IRCServers.get(server).SID.equalsIgnoreCase(split[0])) kicker = IRCServers.get(server).servername;
+				}
+				
+			} 
+			else {
+				kicker = IRCClient.get(split[0]).nick;
 			}
-			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " KICK " + split[2] + " " + IRCClient.get(split[3]).nick,split[0]);
+			
+			try {
+				IRCClient.get(target).removeChannel(split[2]);
+			} catch (java.lang.NullPointerException e) {
+				Log.error("TRIED TO RMEOVE " + target + " FROM " + split[2] + " " + e + " ", "LIGHT_RED");
+				return false;
+			}
+			String reason;
+			reason = Format.join(split, " ", 4);
+			if (reason.startsWith(":")) reason = reason.substring(1);
+			WriteWaffleSockets(":" + kicker + " KICK " + split[2] + " " + IRCClient.get(target).nick + " " + reason,split[0]);
 			RemoveFromChannelsByUID(split[0]);
 		}
 		
