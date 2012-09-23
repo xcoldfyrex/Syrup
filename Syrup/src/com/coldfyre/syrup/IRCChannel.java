@@ -7,8 +7,8 @@ import java.util.List;
 
 public class IRCChannel {
 	
-	public HashMap<String, String> Members = new HashMap<String, String>();
-	public List<String> channelMode = new ArrayList<String>();
+	private HashMap<String, String> Members = new HashMap<String, String>();
+	private List<String> channelMode = new ArrayList<String>();
 
 	private String ChannelName;
 	private long ChannelTS;
@@ -35,7 +35,7 @@ public class IRCChannel {
 				if (key.equals(keytoo)) {
 					IRCUser person;
 					person = Syrup.IRCClient.get(key);
-					memberlist = memberlist + " ," + person.nick;
+					memberlist = memberlist  + " " + this.Members.get(key) + "," + person.nick;
 				}
 	    	}
 		}

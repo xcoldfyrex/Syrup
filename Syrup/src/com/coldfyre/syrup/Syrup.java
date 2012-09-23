@@ -127,6 +127,14 @@ public class Syrup {
     		if (intersection.size() == 0) return false; 
     	}
     	
+    	if (split[1].equals("QUIT")) {
+    		if (searchPlayer.userChannels.size() == 0) return false;
+    		List<String> intersection = new ArrayList<String>(searchServer.userChannels); 
+    		intersection.retainAll(searchPlayer.userChannels);
+    		if (intersection.size() == 0) return false; 
+    	}
+    	
+    	/*
     	if (split[1].equals("PART")) {
     		if (searchServer.userChannels.contains(split[2])) return true;
     		List<String> intersection = new ArrayList<String>(searchServer.userChannels); 
@@ -134,7 +142,7 @@ public class Syrup {
     		if (intersection.size() == 0) return false;
     		return false;
     	}
-    	
+    	*/
     	if (split[1].equals("PRIVMSG")) {
     		//check lobby
     		if (searchServer.lobbyChannel.equalsIgnoreCase(split[2])) return true;
@@ -336,7 +344,11 @@ public class Syrup {
 				} 
 			}
 			//regular IRC person
-			IRCClient.get(split[0]).removeChannel(split[2]);
+			try {
+				IRCClient.get(split[0]).removeChannel(split[2]);
+			} catch (java.lang.NullPointerException e) {
+				Log.error("TRIED TO RMEOVE " + split[0] + " FROM " + split[2] + " " + e + " ", "LIGHT_RED");
+			}
 			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " KICK " + split[2] + " " + IRCClient.get(split[3]).nick,split[0]);
 			RemoveFromChannelsByUID(split[0]);
 		}

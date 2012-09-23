@@ -44,6 +44,7 @@ public class WaffleClient implements Runnable {
 	public boolean threadOK = true;
 
 	public boolean burstSent = false;
+	public boolean burstGot;
 	
 	protected Socket waffleSocket;
     
@@ -56,7 +57,7 @@ public class WaffleClient implements Runnable {
     public WaffleClient(Socket clientSocket, String serverText) {
     	this.connectTS = System.currentTimeMillis() / 1000L;
         this.clientSocket = clientSocket;
-        this.serverText   = serverText;
+        this.serverText = serverText;
 		this.RemoteServerAddress = clientSocket.getRemoteSocketAddress();
 		this.RemoteServerName = "UNKNOWN SERVER: " + String.valueOf(this.RemoteServerAddress);
 		this.BurstTS = 0;
@@ -139,13 +140,13 @@ public class WaffleClient implements Runnable {
 			return false;
 
 		}
-		if (command.startsWith("CAPAB START")) {
+		if (data.startsWith("CAPAB START")) {
 	    	System.out.println("\u001B[1;33m[INFO] Incoming link from: "+this.RemoteServerAddress + "\u001B[0m");
 			capabStarted = true;
 			return true;
 		}
 		
-		if (command.startsWith("CAPAB END")) {
+		if (data.startsWith("CAPAB END")) {
 			capabSent = true;
 			return true;
 		}
@@ -158,6 +159,12 @@ public class WaffleClient implements Runnable {
 		if (split[0].startsWith("SERVER")) {
 			if (split.length < 6) {
 				// bad SERVER, add handler
+			}
+			if (!this.capabSent) {
+				Log.info(RemoteServerName + " Trying to auth but never sent CAPAB!", "LIGHT_RED");
+				WriteServices("ERROR: "+RemoteServerName + " Tried to send SERVER, but never sent CAPAB");
+				CloseSocket("PROTOCOL ERROR");
+		    	return false;
 			}
 			
 			this.RemoteServerName = split[1];
@@ -219,9 +226,21 @@ public class WaffleClient implements Runnable {
 		
 
 		if (command.startsWith("BURST")) {
+			if (this.burstSent) {
+		    	Log.info(RemoteServerName + " Trying to burst twice!", "LIGHT_RED");
+				WriteServices("ERROR: "+RemoteServerName + " Tried to send BURST, but already BURST");
+				CloseSocket("PROTOCOL ERROR");
+		    	return false;
+			}
+			if (!this.capabSent) {
+				Log.info(RemoteServerName + " Trying to burst but never sent CAPAB!", "LIGHT_RED");
+				WriteServices("ERROR: "+RemoteServerName + " Tried to send BURST, but never sent CAPAB");
+				CloseSocket("PROTOCOL ERROR");
+		    	return false;
+			}
+			
 			if (split.length == 3) {
 				this.BurstTS = Integer.parseInt(split[2]);
-				burstSent = true;
 				WriteSocket(Config.pre +"PING " + Config.SID + " "+ RemoteServerID);
 				WriteConnectorSocket(":"+Config.serverName + " SERVER " + RemoteServerName + " * 0 " + RemoteServerID + " " + RemoteServerVersion);
 				String UID = Syrup.uidgen.generateUID(RemoteServerID);
@@ -229,10 +248,14 @@ public class WaffleClient implements Runnable {
 				String[] sqlparams =  sql.split(" ");
 				WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + sqlparams[0]  + "/mc " + sqlparams[3] + " " + sqlparams[3] + " " + sqlparams[0] + " " + sqlparams[1] + " " + System.currentTimeMillis() / 1000L + " +r :Waffle Bot");
 				WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + lobbyChannel + " " + lobbyChannelTS + " +nt :o," + UID);
+				WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + consoleChannel + " " + lobbyChannelTS + " +nt :o," + UID);
+				Syrup.IRCChannels.get(lobbyChannel).addUser(RemoteServerID, "o");
+				Syrup.IRCChannels.get(consoleChannel).addUser(RemoteServerID, "o");
 				WaffleIRCClient waffleircclient = new WaffleIRCClient(sqlparams[0],RemoteServerName,false,RemoteServerID,System.currentTimeMillis() / 1000L);
 				this.WaffleIRCClients.put(UID, waffleircclient);
 				this.botName = sqlparams[0];
 				this.botUID = UID;
+				//send IRC clients back to WaffleClient
 				WriteSocket(Config.pre + "CONFIG BOTNAME=" + this.botName + " LOBBY=" + this.lobbyChannel + " CONSOLE=" + this.consoleChannel);
 		    	Log.info("Incoming link completed: " + RemoteServerName + " " + this.RemoteServerAddress, "LIGHT_YELLOW");
 				for (String key : Syrup.IRCClient.keySet()) {
@@ -252,7 +275,8 @@ public class WaffleClient implements Runnable {
 				}
 				WriteServices("LINK: Finished bursting to "+RemoteServerName);
 				Syrup.WaffleClients.put(RemoteServerName, this);
-
+				WriteSocket(Config.pre + "ENDBURST");
+				burstSent = true;
 				return true;
 				
 			}
@@ -260,6 +284,13 @@ public class WaffleClient implements Runnable {
 		}
 		
 		if (command.startsWith("QUIT")) {
+			if (!this.burstSent) {
+		    	Log.info(RemoteServerName + " Sent QUIT but never BURST!", "LIGHT_RED");
+				WriteServices("ERROR: "+RemoteServerName + " Sent QUIT but never BURST");
+				CloseSocket("PROTOCOL ERROR");
+		    	return false;
+			}
+			
 			String senderUID;
 			senderUID = getUIDFromNick(split[0]);
 			if (!this.WaffleIRCClients.containsKey(senderUID)) return false;
@@ -281,6 +312,13 @@ public class WaffleClient implements Runnable {
 		}
 		
 		if (command.startsWith("FJOIN")){
+			if (!this.burstSent) {
+		    	Log.info(RemoteServerName + " Sent FJOIN but never BURST!", "LIGHT_RED");
+				WriteServices("ERROR: "+RemoteServerName + " Sent FJOIN but never BURST");
+				CloseSocket("PROTOCOL ERROR");
+		    	return false;
+			}
+			
 			//at present, this only supports one nick
 			if (split.length == 6) {
 				String channel = split[2];
@@ -324,6 +362,13 @@ public class WaffleClient implements Runnable {
 		}
 		
 		if (command.startsWith("UID")) {
+			if (!this.burstSent) {
+		    	Log.info(RemoteServerName + " Sent UID but never BURST!", "LIGHT_RED");
+				WriteServices("ERROR: "+RemoteServerName + " Sent UID but never BURST");
+				CloseSocket("PROTOCOL ERROR");
+		    	return false;
+			}
+			
 			if (split.length >= 6) {
 				if ((getUIDFromNick(split[3])) == "") {
 					WaffleIRCClient waffleircclient = new WaffleIRCClient(split[3],split[4],false,this.RemoteServerID,System.currentTimeMillis() / 1000L);
@@ -339,6 +384,13 @@ public class WaffleClient implements Runnable {
 		}
 		
 		if (command.startsWith("PART")) {
+			if (!this.burstSent) {
+		    	Log.info(RemoteServerName + " Sent PART but never BURST!", "LIGHT_RED");
+				WriteServices("ERROR: "+RemoteServerName + " Sent PART but never BURST");
+				CloseSocket("PROTOCOL ERROR");
+		    	return false;
+			}
+			
 			if (split.length < 3) return false;
 			String channel = split[2];
 			if (channel.startsWith("#")){
@@ -356,13 +408,24 @@ public class WaffleClient implements Runnable {
 		}
 		
 		if (command.startsWith("PRIVMSG")) {
+			if (!this.burstSent) {
+		    	Log.info(RemoteServerName + " Sent PRIVMSG but never BURST!", "LIGHT_RED");
+				WriteServices("ERROR: "+RemoteServerName + " Sent PRIVMSG but never BURST");
+				CloseSocket("PROTOCOL ERROR");
+		    	return false;
+			}
+			
 			//is a valid PRIVMSG?
 			if (split.length < 4) return false;
 			if (split[3].startsWith(":")) split[3] = split[3].substring(1);
 			if (split[2].startsWith(":")) split[2] = split[2].substring(1);
+			if (split[0].startsWith(":")) split[0] = split[0].substring(1);
 			String sourceUID = split[0];
 			sourceUID = getUIDFromNick(sourceUID);
-			if (!this.WaffleIRCClients.containsKey(sourceUID)) return false;
+			if (!this.WaffleIRCClients.containsKey(sourceUID) && !split[0].equals("000")) {
+				Log.warn("Got PRIVMSG from client not on server " + split + " " + this.RemoteServerID, "LIGHT_YELLOW");
+				return false;
+			}
 			String message = Format.join(split, " ", 3);
 			String target = split[2];
 			//blank msgs are a protocol violation. bad!
@@ -371,7 +434,14 @@ public class WaffleClient implements Runnable {
 				return false;
 			}
 			// is the target a channel or real irc client?
-			if (! (Syrup.IRCChannels.containsKey(target) || (Syrup.IRCChannels.containsKey("#" + target + "/mc")) || target.equals("") || (Syrup.IRCClient.get(target) == null))) return false;
+			if (! (Syrup.IRCChannels.containsKey(target) || 
+					(Syrup.IRCChannels.containsKey("#" + target + "/mc")) || 
+					target.equals("") ||
+					target.equalsIgnoreCase(this.consoleChannel) ||
+					(Syrup.IRCClient.get(target) == null))
+					) 
+					return false;
+			
 			if (Syrup.IRCClient.containsValue(target)) target = Syrup.IRCClient.get(target).UID;
 			//make sure the client is really on this link
 			if (split[0].equals("000")) {
@@ -466,8 +536,7 @@ public class WaffleClient implements Runnable {
     } 
 	
 	public boolean SendBurst() {
-		
-		WriteSocket(":1SY ENDBURST");
+		WriteSocket(":1SY BURST "  + System.currentTimeMillis() / 1000L);
 		return true;
 	}
 	

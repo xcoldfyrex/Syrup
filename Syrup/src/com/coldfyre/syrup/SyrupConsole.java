@@ -116,11 +116,13 @@ public class SyrupConsole implements Runnable {
 						if (channel != null) {
 							System.out.println("TS: " + channel.getChannelTS()  + " Modes: " + channel.getChannelModes() + "\tUSers: "  + channel.getUserCount());	
 							Log.noTS("=======================================", "LIGHT_CYAN");
+							/*
 							for (String chanmember : channel.Members.keySet()) {
 								IRCUser person;
 								person = Syrup.IRCClient.get(chanmember);
 								System.out.println(person.nick + "\t" );
 							}
+							*/
 						}
 						else {
 							Log.noTS("No such channel", "LIGHT_CYAN");
