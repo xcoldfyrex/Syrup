@@ -198,6 +198,7 @@ public class WaffleClient implements Runnable {
 			}
 			this.consoleChannel = sqlparams[5];
 			addChannel(sqlparams[4]);
+			WriteConnectorSocket(":" + Config.serverName+ " SQUIT " + RemoteServerName + " :Flushing server prior to link");
 			if (Syrup.WaffleClients.containsKey(this.RemoteServerName)) {
 				WriteServices("LINK: Connection to "+RemoteServerName +" failed with error: Server "+RemoteServerName+" already exists!");
 				WriteSocket("ERROR : "+ RemoteServerName +" already exists!");
@@ -340,7 +341,7 @@ public class WaffleClient implements Runnable {
 					String senderUID = getUIDFromNick(joinedUsersNick[1]);
 					if (senderUID.equals("")) {
 						Log.warn(joinedUsersNick[1] + " tried to join channel on " + this.RemoteServerID +", but could not find UID", "LIGHT_YELLOW");
-
+						WriteServices("WARN: "+RemoteServerName + " " + joinedUsersNick[1] + " tried to join channel on " + this.RemoteServerID +", but could not find UID");
 					} 
 					else {
 						this.WaffleIRCClients.get(senderUID).addChannel(channel);
@@ -350,6 +351,8 @@ public class WaffleClient implements Runnable {
 						}
 						Syrup.IRCChannels.get(channel).addUser(joinedUsersNick[1], "");
 						WriteConnectorSocket(":" + this.RemoteServerID + " FJOIN " + channel + " " + this.lobbyChannelTS + " +nt " + mode + "," + senderUID);
+						Syrup.WriteWaffleSockets(Config.pre + "FJOIN " + channel + " ," + joinedUsersNick[1] + "/mc",this.RemoteServerID);
+
 					}
 				}
 				else {
@@ -369,17 +372,28 @@ public class WaffleClient implements Runnable {
 		    	return false;
 			}
 			
-			if (split.length >= 6) {
-				if ((getUIDFromNick(split[3])) == "") {
-					WaffleIRCClient waffleircclient = new WaffleIRCClient(split[3],split[4],false,this.RemoteServerID,System.currentTimeMillis() / 1000L);
+			if (split.length == 5) {
+				if ((getUIDFromNick(split[2])) == "") {
+					//check protocol violations
+					//if ())
+					final long nowTS = System.currentTimeMillis() / 1000L;
+					WaffleIRCClient waffleircclient = new WaffleIRCClient(split[2],split[3],false,this.RemoteServerID,System.currentTimeMillis() / 1000L);
 					String UID = Syrup.uidgen.generateUID(this.RemoteServerID);
 					this.WaffleIRCClients.put(UID, waffleircclient);
-					Log.info("JOIN " + UID + "->" + split[3]+ "(" + split[5] + ") from " + this.RemoteServerID, "LIGHT_GREEN");
-					WriteConnectorSocket(":" + this.RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + split[3]  + "/mc " + split[4] + " " + waffleircclient.hostmask + " " + split[3] + " " + split[5] + " " + System.currentTimeMillis() / 1000L + " +irc :WaffleIRC Client");
+					Log.info("JOIN " + UID + "->" + split[2]+ "(" + split[4] + ") from " + this.RemoteServerID, "LIGHT_GREEN");
+					WriteConnectorSocket(":" + this.RemoteServerID + " UID " + UID + " " + nowTS + " " + split[2]  + "/mc " + split[3] + " " + waffleircclient.hostmask + " " + split[2] + " " + split[4] + " " + System.currentTimeMillis() / 1000L + " +irc :WaffleIRC Client");
+					//Tell other clients
+					Syrup.WriteWaffleSockets(Config.pre + "UID " + split[3] + "/mc " + split[3] + " "+  split[4],null);
 				}
 				else {
 					Log.warn(split[3] + " tried to join twice from " + this.RemoteServerID, "LIGHT_YELLOW");
+					WriteServices("WARN: "+RemoteServerName + " split[3] +  tried to join twice from " + this.RemoteServerID);
+
 				}
+			}
+			else {
+				Log.warn("Malformed UID from " + this.RemoteServerID, "LIGHT_YELLOW");
+				WriteServices("WARN: "+RemoteServerName + " Malformed UID from " + this.RemoteServerID);
 			}
 		}
 		
@@ -460,6 +474,7 @@ public class WaffleClient implements Runnable {
 			else if (Syrup.IRCChannels.get("#" + target + "/mc") != null) {
 				//this would occour if the target channel is not the lobby
 				if (Syrup.IRCChannels.get("#" + target + "/mc").hasUID(split[0])) {
+					Syrup.WriteWaffleSockets(":" + split[0] + "/mc PRIVMSG " + "#" + target + "/mc :" + message, this.RemoteServerID);
 					WriteConnectorSocket(":" + sourceUID + " PRIVMSG " + "#" + target + "/mc :" + message);
 				}
 				

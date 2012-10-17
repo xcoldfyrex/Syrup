@@ -116,6 +116,13 @@ public class Syrup {
 	}
     
     public static boolean ShouldGoToWaffles(String data, String UID, String Server) {
+
+    	if ((WaffleClients.get(Server) != null) && (UID != null)) {
+			//Log.warn(UID + " " + Server + " " + WaffleClients.get(Server).RemoteServerID, "");
+    		if (WaffleClients.get(Server).RemoteServerID != null) {
+    			if (WaffleClients.get(Server).RemoteServerID.equalsIgnoreCase(UID)) return false; // don't send to self .. from self
+    		}
+    	}
     	String[] split = data.split(" ");
     	WaffleClient searchServer = WaffleClients.get(Server);
     	IRCUser searchPlayer = IRCClient.get(UID);
