@@ -279,7 +279,7 @@ public class Syrup {
 		}
 		
 		if (command.equalsIgnoreCase("SQUIT")) {
-	    	Log.info("Lost server "+ split[2] + "from " + split[0] , "LIGHT_YELLOW");
+	    	Log.info("Lost server "+ split[2] + " from " + split[0] , "LIGHT_YELLOW");
 	    	String SID = IRCServers.get(split[2]).SID;
 	    	purgeUIDByServer(SID);
 	    	IRCServers.remove(split[2]);
@@ -577,20 +577,15 @@ public class Syrup {
 	}
 	
 	public static void purgeUIDByServer(String SID) {
-		try {
-			Iterator<Map.Entry<String, IRCUser>> i = IRCClient.entrySet().iterator();  
-			while (i.hasNext()) {  
-				Map.Entry<String, IRCUser> entry = i.next();  
-				if (entry.getKey().startsWith(SID)) {
-					Log.info("Lost client " + entry.getKey() + " from " + SID + " split"  , "LIGHT_YELLOW");
-					WriteWaffleSockets(":" + IRCClient.get(entry.getKey()).nick + " QUIT " + "*.net *.split",entry.getKey());
-					UID.removeUID(entry.getKey());
-					RemoveFromChannelsByUID(entry.getKey());
-				}  
-			}  
-		} catch (ConcurrentModificationException e)  {
-			
-		}
+		for (Iterator<Map.Entry<String, IRCUser>> i = IRCClient.entrySet().iterator(); i.hasNext();)  
+		{		
+			Map.Entry<String, IRCUser> entry = i.next();  
+			if (entry.getKey().startsWith(SID)) {
+				Log.info("Lost client " + entry.getKey() + " from " + SID + " netsplit"  , "LIGHT_YELLOW");
+				WriteWaffleSockets(":" + IRCClient.get(entry.getKey()).nick + " QUIT " + "*.net *.split",entry.getKey());
+				RemoveFromChannelsByUID(entry.getKey());
+				i.remove();
+			}
+		}  
 	}
-	
 }
