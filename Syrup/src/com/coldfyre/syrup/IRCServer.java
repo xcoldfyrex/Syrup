@@ -9,5 +9,4 @@ public class IRCServer {
 	}
 	
 	public String SID,version,parent,servername;
-
 }

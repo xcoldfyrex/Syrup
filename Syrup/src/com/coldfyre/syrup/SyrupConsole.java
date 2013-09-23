@@ -46,7 +46,7 @@ public class SyrupConsole implements Runnable {
 				else if (userInputArgs[0].equalsIgnoreCase("CONNECT")) 
 				{
 					
-					Syrup.reconnectLink();
+					Syrup.ConnectLink();
 
 				} 
 				else if (userInputArgs[0].equalsIgnoreCase("LINKS")) {

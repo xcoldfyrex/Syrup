@@ -250,6 +250,7 @@ public class WaffleClient implements Runnable {
 				WriteConnectorSocket(":" + RemoteServerID + " UID " + UID + " " + System.currentTimeMillis() / 1000L + " " + sqlparams[0]  + "/mc " + sqlparams[3] + " " + sqlparams[3] + " " + sqlparams[0] + " " + sqlparams[1] + " " + System.currentTimeMillis() / 1000L + " +r :Waffle Bot");
 				WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + lobbyChannel + " " + lobbyChannelTS + " +nt :o," + UID);
 				WriteConnectorSocket(":" + RemoteServerID + " FJOIN " + consoleChannel + " " + lobbyChannelTS + " +nt :o," + UID);
+				
 				Syrup.IRCChannels.get(lobbyChannel).addUser(RemoteServerID, "o");
 				Syrup.IRCChannels.get(consoleChannel).addUser(RemoteServerID, "o");
 				WaffleIRCClient waffleircclient = new WaffleIRCClient(sqlparams[0],RemoteServerName,false,RemoteServerID,System.currentTimeMillis() / 1000L);
@@ -529,7 +530,7 @@ public class WaffleClient implements Runnable {
 		}
 	}
 	public void WriteConnectorSocket(String data) {
-		if (Syrup.connected) {
+		if (Syrup.linkEstablished) {
 			if (Syrup.debugMode) {
 				Log.info(this.RemoteServerAddress +" [OUT(IRC)] " + data,"");
 			}
