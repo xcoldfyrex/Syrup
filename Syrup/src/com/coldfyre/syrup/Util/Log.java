@@ -1,5 +1,9 @@
 package com.coldfyre.syrup.Util;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class Log {
 	
 	public void def(Object message, String color){
@@ -32,8 +36,10 @@ public class Log {
 	 }
 
 	 private static void echo(String message) {
-		 java.util.Date time=new java.util.Date((long)System.currentTimeMillis());
-		 System.out.println("["+ time + "] "+ message + "\u001B[0m");
+		 Date ts = new Date();
+		 SimpleDateFormat date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		System.out.println("["+ date.format(ts) + "] "+ message + "\u001B[0m");
+		
 	 }
 
 	 private static String colorConvert(String color) {

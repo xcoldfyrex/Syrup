@@ -144,8 +144,7 @@ public class SyrupConsole implements Runnable {
 								name = person.nick;
 								host = person.host;
 								System.out.println(name + "\t" + personKey + "\t " + sid + "\t " + host);
-							}
-							
+							}		
 						}
 
 					} 
@@ -153,15 +152,15 @@ public class SyrupConsole implements Runnable {
 						Log.noTS("No WaffleIRC clients connected!", "LIGHT_CYAN");
 						Log.noTS("=======================================", "LIGHT_CYAN");
 					}
-					synchronized(Syrup.csIRCClient) {
-						Log.noTS("I have " + Syrup.IRCClient.size() + " IRC client(s) connected:", "LIGHT_CYAN");
+					synchronized (Syrup.csIRCClient) {
+						Log.noTS("I have " + Syrup.getIRCUserMap().size() + " IRC client(s) connected:", "LIGHT_CYAN");
 						Log.noTS("=======================================","LIGHT_CYAN");
 						int i = 0;
 						String name,host,UID, modes;
 						
-						for (String key : Syrup.IRCClient.keySet()) {
+						for (String key : Syrup.getIRCUserMap().keySet()) {
 							IRCUser person;
-							person = Syrup.IRCClient.get(key);
+							person = Syrup.getIRCUser(key);
 
 							name = person.nick;
 							host = person.realhost;

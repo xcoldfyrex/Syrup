@@ -1,7 +1,9 @@
 package com.coldfyre.syrup.Util;
 
+import java.awt.List;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Properties;
 
 public class Config {
@@ -16,6 +18,10 @@ public class Config {
 	public static String sqlurl;
 	public static String sqluser;
 	public static String sqlpassword;
+	private static String debugString;
+	public static boolean silentBurst = false;
+	private static String silentBurstString;
+	public static ArrayList<String> debugParams = new ArrayList();
 	
 	public static boolean GetProperties(){
 		
@@ -42,8 +48,20 @@ public class Config {
 			Log.info("CONFIG: Read SQL URL: " + sqlurl, "LIGHT_YELLOW");
 			sqluser = configFile.getProperty("sqluser");
 			Log.info("CONFIG: Read SQL user: " + sqluser, "LIGHT_YELLOW");
-
 			pre = ":" + SID + " ";
+			debugString = configFile.getProperty("ignoredDebugParams");
+			silentBurstString = configFile.getProperty("silentBurst");
+			if (silentBurstString.equalsIgnoreCase("true")) silentBurst = true;
+			Log.info("CONFIG: Should I hide BURST?: " + silentBurst, "LIGHT_YELLOW");
+			String[] temp = debugString.split(" ");
+			
+			int i = 0;
+			while (i < temp.length) {
+				debugParams.add(temp[i]);
+				i++;
+			}
+			Log.info("CONFIG: Allowed debug params: " + debugParams, "LIGHT_YELLOW");
+
 			Log.info("Config loaded", "LIGHT_GREEN");
 			return true;
 			} catch (NullPointerException ee) {

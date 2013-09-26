@@ -31,10 +31,10 @@ public class IRCChannel {
 	public String getMemberListByNick() {
 		String memberlist = "";
 		for (String key : Members.keySet()) {
-			for (String keytoo : Syrup.IRCClient.keySet()) {
+			for (String keytoo : Syrup.getIRCUserMap().keySet()) {
 				if (key.equals(keytoo)) {
 					IRCUser person;
-					person = Syrup.IRCClient.get(key);
+					person = Syrup.getIRCUser(key);
 					memberlist = memberlist  + " " + this.Members.get(key) + "," + person.nick;
 				}
 	    	}

@@ -25,7 +25,7 @@ public class UID {
 	}
 	
 	public void removeUID(String UID) {
-		Syrup.IRCClient.remove(UID);
+		Syrup.delIRCUser(UID);
 	}
 	
 

@@ -47,7 +47,7 @@ public class Syrup {
 	static WaffleListener waffleListener = null;
 	private static Thread waffleListenerThread = null;
 
-	public static HashMap<String, IRCUser> IRCClient = new HashMap<String, IRCUser>();
+	private static HashMap<String, IRCUser> IRCClientMap = new HashMap<String, IRCUser>();
 	public static HashMap<String, WaffleClient> WaffleClients = new HashMap<String, WaffleClient>();
 	public static HashMap<String, IRCChannel> IRCChannels = new HashMap<String, IRCChannel>();
 	public static HashMap<String, IRCServer> IRCServers = new HashMap<String, IRCServer>();
@@ -55,7 +55,7 @@ public class Syrup {
 
 	public static UIDGen uidgen = new UIDGen();
 
-	public static Log log = new Log();
+	private static Log log = new Log();
 
 	public static void main(String[] args) throws IOException {
 
@@ -88,27 +88,37 @@ public class Syrup {
 		}
 
 		while (running) {
+			try {
+				if (connectorSocket.isClosed() && sentCapab) {
+					Log.warn("Connector socket closed " + Config.connectorHost,
+							"LIGHT_RED");
+					closeConnectorSocket();
+				}
+			} catch (Exception e) {
+
+			}
+
 			while (linkSocketConnected && connectorSocket != null) {
 				try {
-					String connectorStream = in.readLine();
-					if (connectorStream == null) {
-						Log.warn("Lost link to " + Config.connectorHost,
-								"LIGHT_RED");
-						closeConnectorSocket();
-					} else {
-						if (debugMode) {
-							log.def("[IN] " + connectorStream, "");
+					if (in != null) {
+
+
+						String connectorStream = in.readLine();
+
+						if (connectorStream == null) {
+							Log.warn("Lost link to " + Config.connectorHost,
+									"LIGHT_RED");
+							closeConnectorSocket();
+						} else {
+							ParseLinkCommand(connectorStream);
 						}
-						ParseLinkCommand(connectorStream);
+
+						if (!connectorSocket.isConnected()) {
+							Log.info("Connector socket lost connection",
+									"LIGHT_YELLOW");
+						}
 					}
 
-					//if (sentCapab && !sentBurst) {
-					//	connectLink();
-					//}
-					if (!connectorSocket.isConnected()) {
-						Log.info("Connector socket lost connection",
-								"LIGHT_YELLOW");
-					}
 				} catch (SocketException e) {
 					Log.info("Cannot read from link stream: " + e, "LIGHT_RED");
 				}
@@ -118,7 +128,7 @@ public class Syrup {
 		Log.info("Exiting main loop, terminating.", "LIGHT_YELLOW");
 	}
 
-	public static boolean ShouldGoToWaffles(String data, String UID,
+	private static boolean ShouldGoToWaffles(String data, String UID,
 			String Server) {
 
 		if ((WaffleClients.get(Server) != null) && (UID != null)) {
@@ -132,7 +142,7 @@ public class Syrup {
 		}
 		String[] split = data.split(" ");
 		WaffleClient searchServer = WaffleClients.get(Server);
-		IRCUser searchPlayer = IRCClient.get(UID);
+		IRCUser searchPlayer = getIRCUser(UID);
 
 		if (split[1].equals("QUIT")) {
 			if (searchPlayer.userChannels.size() == 0)
@@ -182,7 +192,26 @@ public class Syrup {
 		return true;
 	}
 
-	public static boolean ParseLinkCommand(String data) {
+	public static void addIRCUser (String name, IRCUser ircuser) {
+		if (IRCClientMap.containsKey(name)) return;
+		IRCClientMap.put(name, ircuser);
+	}
+	
+	public static void delIRCUser (String name) {
+		if (!IRCClientMap.containsKey(name)) return;
+		IRCClientMap.remove(name);
+	}
+	
+	public static IRCUser getIRCUser (String name) {
+		if (!IRCClientMap.containsKey(name)) return null;
+		return IRCClientMap.get(name);
+	}
+	
+	public static HashMap<String, IRCUser> getIRCUserMap() {
+		return IRCClientMap;
+	}
+	
+	private static boolean ParseLinkCommand(String data) {
 		String[] split = data.split(" ");
 		String remoteSID = "";
 		String command = "";
@@ -192,13 +221,24 @@ public class Syrup {
 			remoteSID = split[0];
 			command = split[1];
 		}
+		if (debugMode) {
+			if (! Config.debugParams.contains(command)) {
+				if (linkEstablished) {
+					log.def("[IN] " + data, "");
+				} else {
+					if(! Config.silentBurst) {
+						log.def("[IN] " + data, "");
+					}
+				}
+			}
+		}
 		if (data.startsWith("ERROR")) {
 			Log.error(data, "LIGHT_RED");
 			closeConnectorSocket();
 		}
 		// Got a PING
-		if (split[0].equalsIgnoreCase("PING")) {
-			String targetSID = split[1];
+		if (command.equalsIgnoreCase("PING")) {
+			String targetSID = split[3];
 			targetSID.replace(":", "");
 			if (targetSID.equalsIgnoreCase(Config.SID)) {
 				WriteSocket(Config.pre + "PONG " + Config.SID + " " + remoteSID);
@@ -217,22 +257,22 @@ public class Syrup {
 							+ split[2].substring(0, 3)
 							+ " UID "
 							+ split[2]
-							+ " "
-							+ (System.currentTimeMillis() / 1000L)
-							+ " "
-							+ WaffleClients.get(key).WaffleIRCClients
+									+ " "
+									+ (System.currentTimeMillis() / 1000L)
+									+ " "
+									+ WaffleClients.get(key).WaffleIRCClients
 									.get(victom).nick
-							+ "/mc "
-							+ WaffleClients.get(key).WaffleIRCClients
+									+ "/mc "
+									+ WaffleClients.get(key).WaffleIRCClients
 									.get(victom).host
-							+ " "
-							+ WaffleClients.get(key).WaffleIRCClients
+									+ " "
+									+ WaffleClients.get(key).WaffleIRCClients
 									.get(victom).hostmask
-							+ " "
-							+ WaffleClients.get(key).WaffleIRCClients
+									+ " "
+									+ WaffleClients.get(key).WaffleIRCClients
 									.get(victom).nick + " 127.0.0.1 "
-							+ System.currentTimeMillis() / 1000L
-							+ " +r :Minecraft Player");
+									+ System.currentTimeMillis() / 1000L
+									+ " +r :Minecraft Player");
 					WriteSocket(":" + split[2].substring(0, 3)
 							+ " FJOIN #minecraft " + System.currentTimeMillis()
 							/ 1000L + " +nt :," + split[2]);
@@ -243,8 +283,8 @@ public class Syrup {
 			reason = Format.join(split, " ", 2);
 			if (reason.startsWith(":"))
 				reason = reason.substring(1);
-			if (IRCClient.get(split[2]) != null) {
-				WriteWaffleSockets(":" + IRCClient.get(split[2]).nick
+			if (getIRCUser(split[2]) != null) {
+				WriteWaffleSockets(":" + getIRCUser(split[2]).nick
 						+ " QUIT Killed: " + reason, split[0]);
 				UID.removeUID(split[2]);
 				RemoveFromChannelsByUID(split[0]);
@@ -266,8 +306,8 @@ public class Syrup {
 			if (split.length > 6) {
 				for (String key : WaffleClients.keySet()) {
 					for (int i = 5; split.length > i; i++) {
-						if (IRCClient.get(split[i]) != null) {
-							modetarget = IRCClient.get(split[i]).nick;
+						if (getIRCUser(split[i]) != null) {
+							modetarget = getIRCUser(split[i]).nick;
 						} else if (WaffleClients.get(key).WaffleIRCClients
 								.get(split[i]) != null) {
 							modetarget = WaffleClients.get(key).WaffleIRCClients
@@ -318,7 +358,7 @@ public class Syrup {
 			IRCServer server;
 			server = new IRCServer(split[2], split[0], "", split[5]);
 			IRCServers.put(split[2], server);
-			Log.info("Introduced server " + split[2], "LIGHT_YELLOW");
+			Log.info("Introduced remote server " + split[2], "LIGHT_YELLOW");
 		}
 
 		if (command.equalsIgnoreCase("SQUIT")) {
@@ -341,7 +381,7 @@ public class Syrup {
 			} else {
 				newmode = split[4] + split[5];
 			}
-			IRCClient.get(target).setServerModes(newmode);
+			getIRCUser(target).setServerModes(newmode);
 		}
 
 		if (command.equalsIgnoreCase("FJOIN")) {
@@ -363,7 +403,7 @@ public class Syrup {
 				// channel exists, just add people
 				if (IRCChannels.get(channame) != null) {
 					IRCChannels.get(channame).addUser(infoz[1], infoz[0]);
-					IRCClient.get(infoz[1]).addChannel(channame);
+					getIRCUser(infoz[1]).addChannel(channame);
 				}
 				// is new chan
 				else {
@@ -372,10 +412,10 @@ public class Syrup {
 					IRCChannels.put(channame, channel);
 					IRCChannels.get(channame).setChannelModes(chanmodes);
 					IRCChannels.get(channame).addUser(infoz[1], infoz[0]);
-					IRCClient.get(infoz[1]).addChannel(channame);
+					getIRCUser(infoz[1]).addChannel(channame);
 				}
 				WriteWaffleSockets(Config.pre + "FJOIN " + channame + " ,"
-						+ IRCClient.get(infoz[1]).nick, null);
+						+ getIRCUser(infoz[1]).nick, null);
 			}
 		}
 
@@ -385,13 +425,18 @@ public class Syrup {
 					+ " " + split[6], null);
 		}
 
+		if (command.equalsIgnoreCase("ENDBURST")) {
+			Log.info("Succesfully linked", "LIGHT_GREEN");
+			linkEstablished = true;
+		} 
+
 		if (command.equalsIgnoreCase("PART")) {
-			IRCClient.get(split[0]).removeChannel(split[2]);
+			getIRCUser(split[0]).removeChannel(split[2]);
 			String reason;
 			reason = Format.join(split, " ", 3);
 			if (reason.startsWith(":"))
 				reason = reason.substring(1);
-			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " PART "
+			WriteWaffleSockets(":" + getIRCUser(split[0]).nick + " PART "
 					+ split[2] + " " + reason, split[0]);
 			RemoveFromChannelsByUID(split[0]);
 		}
@@ -421,11 +466,11 @@ public class Syrup {
 				}
 
 			} else {
-				kicker = IRCClient.get(split[0]).nick;
+				kicker = getIRCUser(split[0]).nick;
 			}
 
 			try {
-				IRCClient.get(target).removeChannel(split[2]);
+				getIRCUser(target).removeChannel(split[2]);
 			} catch (java.lang.NullPointerException e) {
 				Log.error("TRIED TO RMEOVE " + target + " FROM " + split[2]
 						+ " " + e + " ", "LIGHT_RED");
@@ -436,12 +481,12 @@ public class Syrup {
 			if (reason.startsWith(":"))
 				reason = reason.substring(1);
 			WriteWaffleSockets(":" + kicker + " KICK " + split[2] + " "
-					+ IRCClient.get(target).nick + " " + reason, split[0]);
+					+ getIRCUser(target).nick + " " + reason, split[0]);
 			RemoveFromChannelsByUID(split[0]);
 		}
 
 		if (command.equalsIgnoreCase("FHOST")) {
-			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " FHOST "
+			WriteWaffleSockets(":" + getIRCUser(split[0]).nick + " FHOST "
 					+ split[2].substring(1), split[0]);
 			RemoveFromChannelsByUID(split[0]);
 		}
@@ -451,16 +496,16 @@ public class Syrup {
 			reason = Format.join(split, " ", 2);
 			if (reason.startsWith(":"))
 				reason = reason.substring(1);
-			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " QUIT "
+			WriteWaffleSockets(":" + getIRCUser(split[0]).nick + " QUIT "
 					+ reason, split[0]);
 			UID.removeUID(split[0]);
 			RemoveFromChannelsByUID(split[0]);
 		}
 
 		if (command.startsWith("NICK")) {
-			WriteWaffleSockets(":" + IRCClient.get(split[0]).nick + " NICK "
+			WriteWaffleSockets(":" + getIRCUser(split[0]).nick + " NICK "
 					+ split[2], split[0]);
-			IRCClient.get(split[0]).nick = split[2];
+			getIRCUser(split[0]).nick = split[2];
 		}
 
 		if (data.equalsIgnoreCase("CAPAB START 1202")) {
@@ -507,7 +552,7 @@ public class Syrup {
 		return true;
 	}
 
-	public static void RemoveFromChannelsByUID(String UID) {
+ 	private static void RemoveFromChannelsByUID(String UID) {
 		for (String key : Syrup.IRCChannels.keySet()) {
 			IRCChannel channel;
 			channel = Syrup.IRCChannels.get(key);
@@ -515,7 +560,7 @@ public class Syrup {
 		}
 	}
 
-	public static void RemoveFromChannelsBySID(String SID) {
+ 	private static void RemoveFromChannelsBySID(String SID) {
 		for (String key : Syrup.IRCChannels.keySet()) {
 			IRCChannel channel;
 			channel = Syrup.IRCChannels.get(key);
@@ -523,7 +568,7 @@ public class Syrup {
 		}
 	}
 
-	public static void WriteWaffleSockets(String data, String UID) {
+ 	public static void WriteWaffleSockets(String data, String UID) {
 		for (String key : Syrup.WaffleClients.keySet()) {
 			WaffleClient link;
 			link = Syrup.WaffleClients.get(key);
@@ -535,19 +580,12 @@ public class Syrup {
 		}
 	}
 
-	/*
-	 * public static void reconnectLink() {
-	 * 
-	 * if (openConnectorSocket()) { //sendCapab(); SendBurst(); } else {
-	 * Log.error("Failed to relink", "LIGHT_RED"); } }
-	 */
-
 	public static void ConnectLink() {
 		if (linkEstablished) {
 			Log.warn("Link already established, please SQUIT", "LIGHT_RED");
 			return;
 		}
-		
+
 		if (openConnectorSocket()) {
 			SendCapab();
 			if (sentCapab) {
@@ -559,18 +597,16 @@ public class Syrup {
 		}
 	}
 
-	public static void SendCapab() {
+	private static void SendCapab() {
 		WriteSocket("CAPAB START 1201");
 		WriteSocket("CAPAB CAPABILITIES :NICKMAX=33 CHANMAX=50 IDENTMAX=33 MAXTOPIC=500 MAXQUIT=500 MAXKICK=500 MAXGECOS=500 MAXAWAY=999 MAXMODES=1 HALFOP=1 PROTOCOL=1201");
 		WriteSocket("CAPAB END");
 		WriteSocket("SERVER " + Config.serverName + " " + Config.linkPassword
 				+ " 0 " + Config.SID + " :Syrup");
-		// WriteSocket("PASS " + Config.linkPassword + " TS 6  " + Config.SID);
-		// WriteSocket("SERVER " + Config.serverName + " 0 :Syrup");
 		sentCapab = true;
 	}
 
-	public static boolean SendBurst() {
+	private static boolean SendBurst() {
 		WriteSocket(Config.pre + "BURST "
 				+ (System.currentTimeMillis() / 1000L));
 		WriteSocket(Config.pre + "VERSION : Syrup");
@@ -585,13 +621,21 @@ public class Syrup {
 
 	public static void WriteSocket(String data) {
 		if (debugMode) {
-			log.def("[OUT] " + data, "");
+			String[] command = data.split(" ");
+			if (! Config.debugParams.contains(command[1])) {
+				if (linkEstablished) {
+					log.def("[OUT] " + data, "");
+				} else {
+					if(! Config.silentBurst) {
+						log.def("[OUT] " + data, "");
+					}
+				}
+			}
 		}
 		out.println(data);
-
 	}
 
-	public static boolean openConnectorSocket() {
+	private static boolean openConnectorSocket() {
 		if (linkSocketConnected) {
 			Log.error("Somehow tried to open connector socket twice?",
 					"LIGHT_RED");
@@ -650,18 +694,19 @@ public class Syrup {
 		linkSocketConnected = false;
 		sentBurst = false;
 		sentCapab = false;
+		linkEstablished = false;
 		if ((connectorSocket != null) && connectorSocket.isConnected()) {
 			try {
 				connectorSocket.close();
 			} catch (IOException e) {
-				Log.info("Caught exception closing connector: " + e,
+				Log.info("Caught exception, closing connector: " + e,
 						"LIGHT_YELLOW");
 			}
 		}
 		return true;
 	}
 
-	public static int getWaffleClientServerName(String servername) {
+	private static int getWaffleClientServerName(String servername) {
 		int i = 0;
 		String sname;
 		while (i < WaffleClients.size()) {
@@ -675,14 +720,14 @@ public class Syrup {
 		return -1;
 	}
 
-	public static void purgeUIDByServer(String SID) {
-		for (Iterator<Map.Entry<String, IRCUser>> i = IRCClient.entrySet()
+	private static void purgeUIDByServer(String SID) {
+		for (Iterator<Map.Entry<String, IRCUser>> i = getIRCUserMap().entrySet()
 				.iterator(); i.hasNext();) {
 			Map.Entry<String, IRCUser> entry = i.next();
 			if (entry.getKey().startsWith(SID)) {
 				Log.info("Lost client " + entry.getKey() + " from " + SID
 						+ " netsplit", "LIGHT_YELLOW");
-				WriteWaffleSockets(":" + IRCClient.get(entry.getKey()).nick
+				WriteWaffleSockets(":" + getIRCUser(entry.getKey()).nick
 						+ " QUIT " + "*.net *.split", entry.getKey());
 				RemoveFromChannelsByUID(entry.getKey());
 				i.remove();

@@ -22,7 +22,7 @@ public class IRCUser {
 		this.signonTime = signonTime;
 		this.lastActivity = lastActivity;
 		this.SID = server;
-		Syrup.IRCClient.put(UID, this);
+		Syrup.addIRCUser(UID, this);
 	}
 	
 	/*
@@ -103,9 +103,9 @@ public class IRCUser {
 	
 	public static String getNick(String UID){
 		UID = UID.replaceAll(":", "");
-		for (String key : Syrup.IRCClient.keySet()) {
+		for (String key : Syrup.getIRCUserMap().keySet()) {
 			IRCUser person;
-			person = Syrup.IRCClient.get(key);
+			person = Syrup.getIRCUser(key);
     		if (key.equalsIgnoreCase(UID)) return person.nick;
     	}
 			return null;
